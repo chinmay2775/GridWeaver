@@ -24,6 +24,9 @@ logging:
     com.gridweaver: DEBUG
 
 gridweaver:
+  ingest:
+    port: 9099
+    backlog: 8192
   kafka:
     bootstrap-servers: localhost:9092
-    topic: grid.telemetry     # 5 partitions, keyed by zone (Week 3)
+    topic: grid.telemetry
