@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * and sends a telemetry frame every intervalMs.
  *
  * Usage: LoadGenerator [count] [host] [port] [intervalMs]
- */
+ */ 
 public class LoadGenerator {
 
     public static void main(String[] args) throws Exception {
