@@ -9,6 +9,7 @@ package com.GridWeaver.model;
  */
 public record TelemetryFrame(double powerKw, double soc, long receivedAt) {
 
+
     public static TelemetryFrame parse(String line, long now) {
         // expects: T|<powerKw>|<soc>
         int p1 = line.indexOf('|');
@@ -18,6 +19,12 @@ public record TelemetryFrame(double powerKw, double soc, long receivedAt) {
         }
         double power = Double.parseDouble(line.substring(p1 + 1, p2));
         double soc = Double.parseDouble(line.substring(p2 + 1));
+        if (!Double.isFinite(power) || !Double.isFinite(soc)) {
+            throw new IllegalArgumentException("non-finite values");
+        }
+        if (soc < 0.0 || soc > 1.0) {
+            throw new IllegalArgumentException("soc out of range: " + soc);
+        }
         return new TelemetryFrame(power, soc, now);
     }
 }

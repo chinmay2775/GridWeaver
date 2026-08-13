@@ -27,6 +27,7 @@ gridweaver:
   ingest:
     port: 9099
     backlog: 8192
+    acceptors: 4
   kafka:
     bootstrap-servers: localhost:9092
     topic: grid.telemetry

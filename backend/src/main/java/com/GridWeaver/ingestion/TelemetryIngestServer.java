@@ -42,9 +42,13 @@ public class TelemetryIngestServer {
     @Value("${gridweaver.ingest.backlog:8192}")
     private int backlog;
 
+    @Value("${gridweaver.ingest.acceptors:4}")
+    private int acceptors;
+
     private volatile boolean running;
     private ServerSocket serverSocket;
     private Thread acceptThread;
+    private final java.util.List<Thread> acceptThreads = new java.util.ArrayList<>();
 
     public TelemetryIngestServer(NodeRegistry registry, ConnectionManager connections) {
         this.registry = registry;
@@ -56,11 +60,13 @@ public class TelemetryIngestServer {
         serverSocket = new ServerSocket(port, backlog);
         running = true;
 
-        // Accept loop gets its own virtual thread so @PostConstruct returns
-        // and Spring finishes starting up.
-        acceptThread = Thread.ofVirtual().name("ingest-accept").start(this::acceptLoop);
+        for (int i = 0; i < acceptors; i++) {
+            acceptThreads.add(
+                    Thread.ofVirtual().name("ingest-accept-" + i).start(this::acceptLoop));
+        }
 
-        log.info("Telemetry ingest listening on port {} (backlog {})", port, backlog);
+        log.info("Telemetry ingest listening on port {} (backlog {}, {} acceptors)",
+                port, backlog, acceptors);
     }
 
     private void acceptLoop() {
@@ -103,11 +109,12 @@ public class TelemetryIngestServer {
 
             // --- frame loop: blocks here for the life of the connection ---
             String line;
+            final String id = nodeId;
             while ((line = in.readLine()) != null) {
                 try {
-                    TelemetryFrame.parse(line, System.currentTimeMillis());
+                    TelemetryFrame f = TelemetryFrame.parse(line, System.currentTimeMillis());
+                    registry.update(id, prev -> prev.withTelemetry(f.powerKw(), f.soc(), f.receivedAt()));
                     connections.onFrame();
-                    // Day 4 wires this into registry.update(nodeId, ...)
                 } catch (RuntimeException bad) {
                     connections.onBadFrame();
                 }
@@ -133,7 +140,7 @@ public class TelemetryIngestServer {
     public void stop() throws Exception {
         running = false;
         if (serverSocket != null) serverSocket.close();
-        if (acceptThread != null) acceptThread.join(2000);
+        for (Thread t : acceptThreads) t.join(2000);
         log.info("Telemetry ingest stopped. Peak connections: {}", connections.peak());
     }
 }

@@ -3,6 +3,8 @@ package com.GridWeaver.controller;
 import com.GridWeaver.config.NodeRegistry;
 import com.GridWeaver.ingestion.ConnectionManager;
 import com.GridWeaver.model.NodeState;
+import com.GridWeaver.model.Zone;
+import com.GridWeaver.service.ZoneAggregator;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,9 +25,11 @@ public class DebugController {
 
     private final NodeRegistry registry;
     private final ConnectionManager connections;
-    public DebugController(NodeRegistry registry, ConnectionManager connections) {
+    private final ZoneAggregator aggregator;
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator) {
         this.registry = registry;
         this.connections = connections;
+        this.aggregator = aggregator;
     }
 
     @GetMapping("/stats")
@@ -46,5 +50,11 @@ public class DebugController {
     @GetMapping("/nodes")
     public List<NodeState> nodes(@RequestParam(defaultValue = "20") int limit) {
         return registry.all().stream().limit(limit).toList();
+    }
+
+    @GetMapping("/zones")
+    public Map<Zone, ZoneAggregator.ZoneSummary> zones(
+            @RequestParam(defaultValue = "5000") long staleAfterMs) {
+        return aggregator.summarise(staleAfterMs);
     }
 }

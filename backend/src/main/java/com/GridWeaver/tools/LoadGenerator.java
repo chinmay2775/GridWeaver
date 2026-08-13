@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * and sends a telemetry frame every intervalMs.
  *
  * Usage: LoadGenerator [count] [host] [port] [intervalMs]
- */ 
+ */
 public class LoadGenerator {
 
     public static void main(String[] args) throws Exception {
@@ -35,7 +35,7 @@ public class LoadGenerator {
         var failures = new java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.LongAdder>();
 
         for (int i = 0; i < count; i++) {
-            if (i > 0 && i % 250 == 0) Thread.sleep(25);
+            if (i > 0 && i % 100 == 0) Thread.sleep(50);
             String nodeId = "zone-%s/node-%04d".formatted(zones[i / perZone % 5], i % perZone);
             Thread.ofVirtual().name("gen-", i).start(() -> {
                 try (Socket s = new Socket()) {
@@ -58,19 +58,29 @@ public class LoadGenerator {
                     ready.countDown();
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
+                    int bucket = Math.abs(nodeId.hashCode()) % 100;
+                    String type = bucket < 55 ? "SOLAR" : bucket < 85 ? "LOAD" : "BATTERY";
+                    double soc = rnd.nextDouble(0.3, 0.8);
                     while (!Thread.currentThread().isInterrupted()) {
-                        double power = rnd.nextDouble(-8.0, 12.0);
-                        double soc = rnd.nextDouble(0.1, 1.0);
+                        double power;
+                        switch (type) {
+                            case "SOLAR" -> power = rnd.nextDouble(0.0, 12.0);
+                            case "LOAD"  -> power = -rnd.nextDouble(0.5, 8.0);
+                            default -> {                       // BATTERY
+                                power = rnd.nextDouble(-4.0, 4.0);
+                                soc = Math.clamp(soc - power * 0.0005, 0.05, 1.0);
+                            }
+                        }
                         out.write("T|%.2f|%.3f\n".formatted(power, soc)
                                 .getBytes(StandardCharsets.UTF_8));
                         out.flush();
-                        Thread.sleep(intervalMs + rnd.nextInt(200));  // jitter
+                        Thread.sleep(intervalMs + rnd.nextInt(200));
                     }
                 } catch (Exception e) {
                     failed.incrementAndGet();
-                    failures.computeIfAbsent(e.getClass().getSimpleName() + ": " + e.getMessage(),
-                                    k -> new java.util.concurrent.atomic.LongAdder())
-                            .increment();
+                    failures.computeIfAbsent(
+                            e.getClass().getSimpleName() + ": " + e.getMessage(),
+                            k -> new java.util.concurrent.atomic.LongAdder()).increment();
                     ready.countDown();
                 }
             });
@@ -78,10 +88,9 @@ public class LoadGenerator {
 
         ready.await();
         long ms = (System.nanoTime() - t0) / 1_000_000;
-        System.out.printf("connected=%d failed=%d in %d ms%n",
-                connected.get(), failed.get(), ms);
+        System.out.printf("connected=%d failed=%d in %d ms%n", connected.get(), failed.get(), ms);
+        failures.forEach((k, v) -> System.out.printf("  %6d  %s%n", v.sum(), k));
         System.out.println("Holding connections. Ctrl+C to stop.");
         Thread.currentThread().join();
-        failures.forEach((k, v) -> System.out.printf("  %6d  %s%n", v.sum(), k));
-    }
+        }
 }
