@@ -31,3 +31,11 @@ gridweaver:
   kafka:
     bootstrap-servers: localhost:9092
     topic: grid.telemetry
+  rules:
+    tick-ms: 250
+    discharge-above-load: 0.80
+    charge-below-load: 0.40
+    soc-floor: 0.20
+    soc-ceiling: 0.95
+    idle-band-kw: 0.10
+    stale-after-ms: 5000

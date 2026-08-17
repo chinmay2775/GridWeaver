@@ -4,6 +4,7 @@ import com.GridWeaver.config.NodeRegistry;
 import com.GridWeaver.ingestion.ConnectionManager;
 import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
+import com.GridWeaver.service.StateEvaluator;
 import com.GridWeaver.service.ZoneAggregator;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,10 +27,13 @@ public class DebugController {
     private final NodeRegistry registry;
     private final ConnectionManager connections;
     private final ZoneAggregator aggregator;
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator) {
+    private final StateEvaluator evaluator;
+
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
+        this.evaluator = evaluator;
     }
 
     @GetMapping("/stats")
@@ -56,5 +60,12 @@ public class DebugController {
     public Map<Zone, ZoneAggregator.ZoneSummary> zones(
             @RequestParam(defaultValue = "5000") long staleAfterMs) {
         return aggregator.summarise(staleAfterMs);
+    }
+    @GetMapping("/states")
+    public Map<String, Object> states() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("byStatus", evaluator.statusCounts());
+        m.put("tick", evaluator.tickStats());
+        return m;
     }
 }
