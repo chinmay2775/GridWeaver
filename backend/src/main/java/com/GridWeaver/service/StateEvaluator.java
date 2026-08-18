@@ -1,10 +1,7 @@
 package com.GridWeaver.service;
 
 import com.GridWeaver.config.NodeRegistry;
-import com.GridWeaver.model.NodeState;
-import com.GridWeaver.model.NodeStatus;
-import com.GridWeaver.model.TransitionRules;
-import com.GridWeaver.model.Zone;
+import com.GridWeaver.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +32,7 @@ public class StateEvaluator {
     private final AtomicLong ticks = new AtomicLong();
     private final AtomicLong lastTickMicros = new AtomicLong();
     private final AtomicLong lastTransitions = new AtomicLong();
+    private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
 
     @Value("${gridweaver.rules.discharge-above-load:0.80}") private double dischargeAbove;
     @Value("${gridweaver.rules.charge-below-load:0.40}")    private double chargeBelow;
@@ -42,12 +40,22 @@ public class StateEvaluator {
     @Value("${gridweaver.rules.soc-ceiling:0.95}")          private double socCeiling;
     @Value("${gridweaver.rules.idle-band-kw:0.10}")         private double idleBand;
     @Value("${gridweaver.rules.stale-after-ms:5000}")       private long staleAfterMs;
+    @Value("${gridweaver.zone.stressed-enter:0.80}")   private double stressedEnter;
+    @Value("${gridweaver.zone.stressed-exit:0.70}")    private double stressedExit;
+    @Value("${gridweaver.zone.surplus-enter:0.40}")    private double surplusEnter;
+    @Value("${gridweaver.zone.surplus-exit:0.50}")     private double surplusExit;
+    @Value("${gridweaver.zone.reserve-floor:0.15}")    private double reserveFloor;
+    @Value("${gridweaver.zone.reserve-restore:0.25}")  private double reserveRestore;
+
 
     public StateEvaluator(NodeRegistry registry, ZoneAggregator aggregator) {
         this.registry = registry;
         this.aggregator = aggregator;
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
+        }
+        for (Zone z : Zone.values()) {
+            machines.put(z, new ZoneStateMachine());
         }
     }
 
@@ -61,19 +69,30 @@ public class StateEvaluator {
         long t0 = System.nanoTime();
         long now = System.currentTimeMillis();
         var t = thresholds();
+        var bands = new ZoneStateMachine.Bands(
+                stressedEnter, stressedExit, surplusEnter, surplusExit,
+                reserveFloor, reserveRestore);
 
-        // One aggregate pass, reused for every node in the zone.
-        Map<Zone, Double> load = new EnumMap<>(Zone.class);
-        aggregator.summarise(staleAfterMs)
-                .forEach((z, s) -> load.put(z, s.loadFactor()));
+        // Pass 1: aggregate, then step each zone machine.
+        var summaries = aggregator.summarise(staleAfterMs);
+        Map<Zone, ZoneStatus> policy = new EnumMap<>(Zone.class);
 
+        summaries.forEach((z, s) -> {
+            ZoneStateMachine m = machines.get(z);
+            ZoneStatus moved = m.fire(s.loadFactor(), s.avgBatterySoc(), now, bands);
+            if (moved != null) {
+                log.info("zone {} -> {} (load {}, soc {})",
+                        z, moved, s.loadFactor(), s.avgBatterySoc());
+            }
+            policy.put(z, m.state());
+        });
+
+        // Pass 2: apply the zone policy to every node.
         long changed = 0;
         for (NodeState node : registry.all()) {
             NodeStatus want = TransitionRules.next(
-                    node, load.getOrDefault(node.zone(), 0.0), now, t);
+                    node, policy.getOrDefault(node.zone(), ZoneStatus.NOMINAL), now, t);
 
-            // Only write when the status actually differs. Without this guard we
-            // would allocate 10k replacement records every tick for no reason.
             if (want != node.status()) {
                 registry.update(node.nodeId(), prev ->
                         prev.status() == want ? prev : prev.withStatus(want));
@@ -85,10 +104,6 @@ public class StateEvaluator {
         ticks.incrementAndGet();
         lastTransitions.set(changed);
         lastTickMicros.set((System.nanoTime() - t0) / 1_000);
-
-        if (changed > 0 && log.isDebugEnabled()) {
-            log.debug("tick {}: {} transitions in {} us", ticks.get(), changed, lastTickMicros.get());
-        }
     }
 
     // --- exposed for /debug ---
@@ -110,5 +125,18 @@ public class StateEvaluator {
         m.put("cumulativeTransitionsInto", into);
         m.put("thresholds", thresholds());
         return m;
+    }
+
+    public Map<Zone, Map<String, Object>> zoneMachines() {
+        long now = System.currentTimeMillis();
+        Map<Zone, Map<String, Object>> out = new EnumMap<>(Zone.class);
+        machines.forEach((z, m) -> {
+            Map<String, Object> v = new java.util.LinkedHashMap<>();
+            v.put("state", m.state());
+            v.put("dwellMs", m.dwellMs(now));
+            v.put("transitions", m.transitionCount());
+            out.put(z, v);
+        });
+        return out;
     }
 }

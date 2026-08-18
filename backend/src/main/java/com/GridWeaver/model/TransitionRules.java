@@ -19,32 +19,34 @@ public final class TransitionRules {
     }
 
 
-    public static NodeStatus next(NodeState node, double zoneLoad, long now, Thresholds t) {
+    public static NodeStatus next(NodeState node, ZoneStatus zoneStatus, long now, Thresholds t) {
 
-        // A node that has stopped reporting is faulted regardless of type or
-        // last-known values. Checked first so stale data can never drive a decision.
         if (node.lastSeen() == 0 || now - node.lastSeen() > t.staleAfterMs()) {
             return NodeStatus.FAULT;
         }
 
         return switch (node.type()) {
-            case BATTERY -> battery(node, zoneLoad, t);
-            // Generation and consumption nodes have no commanded state -- their
-            // status just reflects observed power flow.
+            case BATTERY -> battery(node, zoneStatus, t);
             case SOLAR   -> node.powerKw() >  t.idleBandKw() ? NodeStatus.DISCHARGING : NodeStatus.IDLE;
             case LOAD    -> node.powerKw() < -t.idleBandKw() ? NodeStatus.CHARGING    : NodeStatus.IDLE;
         };
     }
 
-    private static NodeStatus battery(NodeState node, double zoneLoad, Thresholds t) {
-        double soc = node.soc();
+    /**
+      Batteries execute their zone's policy, bounded by their own SoC.
+      SoC limits are checked after the zone command so the zone decides intent
+      and the node decides feasibility -- a depleted battery in a STRESSED zone
+      simply cannot help, and idles rather than over-discharging.
+     */
 
-        if (zoneLoad > t.dischargeAboveLoad()) {
-            return soc > t.socFloor() ? NodeStatus.DISCHARGING : NodeStatus.IDLE;
-        }
-        if (zoneLoad < t.chargeBelowLoad()) {
-            return soc < t.socCeiling() ? NodeStatus.CHARGING : NodeStatus.IDLE;
-        }
-        return NodeStatus.IDLE;
+    private static NodeStatus battery(NodeState node, ZoneStatus zone, Thresholds t) {
+        double soc = node.soc();
+        return switch (zone) {
+            case STRESSED, CRITICAL ->
+                    soc > t.socFloor()   ? NodeStatus.DISCHARGING : NodeStatus.IDLE;
+            case SURPLUS ->
+                    soc < t.socCeiling() ? NodeStatus.CHARGING    : NodeStatus.IDLE;
+            case NOMINAL -> NodeStatus.IDLE;
+        };
     }
 }

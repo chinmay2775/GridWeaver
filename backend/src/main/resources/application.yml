@@ -24,6 +24,13 @@ logging:
     com.gridweaver: DEBUG
 
 gridweaver:
+  zone:
+    stressed-enter: 0.80
+    stressed-exit: 0.70
+    surplus-enter: 0.40
+    surplus-exit: 0.50
+    reserve-floor: 0.15
+    reserve-restore: 0.25
   ingest:
     port: 9099
     backlog: 8192
