@@ -7,18 +7,7 @@ import org.springframework.stereotype.Service;
 import java.util.EnumSet;
 import java.util.Set;
 
-/**
-  One machine per zone. Explicit transition table with guards -- the same shape
-  Spring State Machine would give us, without the dependency.
 
-  Spring Statemachine 4.0.x targets Boot 3.5.x and the Boot 4 support request was
-  declined upstream, so it is not viable on Boot 4.1. This implementation keeps
-  the semantics that matter here: a defined state set, events that drive
-  transitions, guards that can veto them, and a listener hook for auditing.
-
-  Not thread-safe by design: exactly one caller (the scheduled evaluator) drives
-  all five machines from a single tick, so locking would be pure overhead.
- */
 @Service
 public class ZoneStateMachine {
 

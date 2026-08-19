@@ -1,5 +1,6 @@
 package com.GridWeaver.config;
 
+import org.springframework.core.annotation.Order;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import com.GridWeaver.model.NodeSeed;
@@ -19,6 +20,7 @@ import java.util.List;
  * registry. Runs once, before any connections are accepted.
  */
 @Component
+@Order
 public class NodeSeedLoader implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(NodeSeedLoader.class);

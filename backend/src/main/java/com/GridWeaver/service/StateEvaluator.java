@@ -1,6 +1,7 @@
 package com.GridWeaver.service;
 
 import com.GridWeaver.config.NodeRegistry;
+import com.GridWeaver.ingestion.GridBroadcaster;
 import com.GridWeaver.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,8 @@ public class StateEvaluator {
     private final AtomicLong lastTickMicros = new AtomicLong();
     private final AtomicLong lastTransitions = new AtomicLong();
     private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
+    private final GridBroadcaster broadcaster;
+    private final NodeIndex index;
 
     @Value("${gridweaver.rules.discharge-above-load:0.80}") private double dischargeAbove;
     @Value("${gridweaver.rules.charge-below-load:0.40}")    private double chargeBelow;
@@ -48,9 +51,11 @@ public class StateEvaluator {
     @Value("${gridweaver.zone.reserve-restore:0.25}")  private double reserveRestore;
 
 
-    public StateEvaluator(NodeRegistry registry, ZoneAggregator aggregator) {
+    public StateEvaluator(NodeRegistry registry, ZoneAggregator aggregator,NodeIndex index, GridBroadcaster broadcaster) {
         this.registry = registry;
         this.aggregator = aggregator;
+        this.index = index;
+        this.broadcaster = broadcaster;
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
         }
@@ -87,8 +92,12 @@ public class StateEvaluator {
             policy.put(z, m.state());
         });
 
-        // Pass 2: apply the zone policy to every node.
+        // Pass 2: apply zone policy, collecting deltas as we go.
+        // Sized generously from the observed ~160 transitions/tick.
+        int[] deltas = new int[2048];
+        int d = 0;
         long changed = 0;
+
         for (NodeState node : registry.all()) {
             NodeStatus want = TransitionRules.next(
                     node, policy.getOrDefault(node.zone(), ZoneStatus.NOMINAL), now, t);
@@ -98,12 +107,24 @@ public class StateEvaluator {
                         prev.status() == want ? prev : prev.withStatus(want));
                 transitionsInto.get(want).increment();
                 changed++;
+
+                if (d + 2 <= deltas.length) {
+                    int pos = index.positionOf(node.nodeId());
+                    if (pos >= 0) {
+                        deltas[d++] = pos;
+                        deltas[d++] = want.ordinal();
+                    }
+                }
             }
         }
 
-        ticks.incrementAndGet();
+        long tick = ticks.incrementAndGet();
         lastTransitions.set(changed);
         lastTickMicros.set((System.nanoTime() - t0) / 1_000);
+
+        // Broadcast on a virtual thread so a slow client cannot delay the next tick.
+        int[] payload = java.util.Arrays.copyOf(deltas, d);
+        Thread.ofVirtual().start(() -> broadcaster.publish(tick, payload));
     }
 
     // --- exposed for /debug ---

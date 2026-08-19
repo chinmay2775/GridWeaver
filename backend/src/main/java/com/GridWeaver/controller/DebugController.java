@@ -2,9 +2,11 @@ package com.GridWeaver.controller;
 
 import com.GridWeaver.config.NodeRegistry;
 import com.GridWeaver.ingestion.ConnectionManager;
+import com.GridWeaver.ingestion.GridBroadcaster;
 import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
 import com.GridWeaver.model.ZoneStatus;
+import com.GridWeaver.service.NodeIndex;
 import com.GridWeaver.service.StateEvaluator;
 import com.GridWeaver.service.ZoneAggregator;
 import com.GridWeaver.service.ZoneStateMachine;
@@ -31,13 +33,17 @@ public class DebugController {
     private final ZoneAggregator aggregator;
     private final StateEvaluator evaluator;
     private final ZoneStateMachine zoneMachines;
+    private final GridBroadcaster broadcaster;
+    private final NodeIndex index;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines) {
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
         this.evaluator = evaluator;
         this.zoneMachines = zoneMachines;
+        this.broadcaster = broadcaster;
+        this.index = index;
     }
 
     @GetMapping("/stats")
@@ -71,6 +77,15 @@ public class DebugController {
         m.put("byStatus", evaluator.statusCounts());
         m.put("tick", evaluator.tickStats());
         m.put("zoneMachines", evaluator.zoneMachines());
+        m.put("broadcast", broadcaster.stats());
+        return m;
+    }
+    @GetMapping("/index")
+    public Map<String, Object> indexInfo() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("size", index.size());
+        m.put("sample", index.size() > 0 ? index.idAt(0) : null);
+        m.put("lookupTest", index.positionOf("zone-A/node-0000"));
         return m;
     }
 }
