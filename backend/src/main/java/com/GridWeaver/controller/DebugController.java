@@ -6,10 +6,7 @@ import com.GridWeaver.ingestion.GridBroadcaster;
 import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
 import com.GridWeaver.model.ZoneStatus;
-import com.GridWeaver.service.NodeIndex;
-import com.GridWeaver.service.StateEvaluator;
-import com.GridWeaver.service.ZoneAggregator;
-import com.GridWeaver.service.ZoneStateMachine;
+import com.GridWeaver.service.*;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,8 +32,9 @@ public class DebugController {
     private final ZoneStateMachine zoneMachines;
     private final GridBroadcaster broadcaster;
     private final NodeIndex index;
+    private final EventLog eventLog;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index) {
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
@@ -44,6 +42,8 @@ public class DebugController {
         this.zoneMachines = zoneMachines;
         this.broadcaster = broadcaster;
         this.index = index;
+        this.eventLog = eventLog;
+
     }
 
     @GetMapping("/stats")
@@ -86,6 +86,17 @@ public class DebugController {
         m.put("size", index.size());
         m.put("sample", index.size() > 0 ? index.idAt(0) : null);
         m.put("lookupTest", index.positionOf("zone-A/node-0000"));
+        return m;
+    }
+    @GetMapping("/events")
+    public Map<String, Object> events(
+            @RequestParam(defaultValue = "50") int limit,
+            @RequestParam(required = false) Zone zone,
+            @RequestParam(required = false) ZoneStatus status) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("total", eventLog.total());
+        m.put("capacity", eventLog.capacity());
+        m.put("events", eventLog.recent(limit, zone, status));
         return m;
     }
 }

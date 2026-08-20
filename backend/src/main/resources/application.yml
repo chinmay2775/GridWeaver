@@ -46,3 +46,5 @@ gridweaver:
     soc-ceiling: 0.95
     idle-band-kw: 0.10
     stale-after-ms: 5000
+  eventlog:
+    capacity: 4096

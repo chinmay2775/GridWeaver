@@ -53,7 +53,7 @@ public class NodeIndex {
         return ids.length;
     }
 
-    /** @return array position, or -1 if unknown */
+//     @return array position, or -1 if unknown
     public int positionOf(String nodeId) {
         ensureBuilt();
         return positions.getOrDefault(nodeId, -1);

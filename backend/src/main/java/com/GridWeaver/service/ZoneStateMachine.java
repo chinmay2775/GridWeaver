@@ -25,6 +25,7 @@ public class ZoneStateMachine {
         }
     }
 
+    public record Transition(ZoneStatus from, ZoneStatus to, ZoneEvent trigger, long dwellMs) {}
 
     private static final Set<ZoneEvent> FROM_SURPLUS =
             EnumSet.of(ZoneEvent.LOAD_ROSE);
@@ -65,6 +66,22 @@ public class ZoneStateMachine {
         enteredAt = now;
         transitionCount++;
         return state;
+    }
+
+    public Transition step(double loadFactor, double avgSoc, long now, Bands b) {
+        ZoneEvent event = deriveEvent(loadFactor, avgSoc, b);
+        if (event == null || !accepts(event)) return null;
+
+        ZoneStatus target = target(event, loadFactor, avgSoc, b);
+        if (target == null || target == state) return null;
+
+        ZoneStatus previous = state;
+        long dwell = now - enteredAt;
+
+        state = target;
+        enteredAt = now;
+        transitionCount++;
+        return new Transition(previous, target, event, dwell);
     }
 
     private ZoneEvent deriveEvent(double load, double avgSoc, Bands b) {

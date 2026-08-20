@@ -16,6 +16,7 @@ import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorato
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,6 +54,9 @@ public class GridBroadcaster extends TextWebSocketHandler {
     private final LongAdder messagesSent = new LongAdder();
     private final LongAdder deltasSent = new LongAdder();
     private volatile int lastPayloadBytes;
+
+    private final java.util.concurrent.ConcurrentLinkedQueue<Object> pendingEvents =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
 
     public GridBroadcaster(NodeRegistry registry, NodeIndex index,
                            ZoneAggregator aggregator, JsonMapper json) {
@@ -114,7 +118,10 @@ public class GridBroadcaster extends TextWebSocketHandler {
 
     public void publish(long tick, int[] deltas) {
         if (sessions.isEmpty()) return;
-
+        List<Object> events = new ArrayList<>();
+        for (Object o = pendingEvents.poll(); o != null; o = pendingEvents.poll()) {
+            events.add(o);
+        }
         String message;
         try {
             var payload = Map.of(
@@ -174,5 +181,24 @@ public class GridBroadcaster extends TextWebSocketHandler {
                 "deltasSent", deltasSent.sum(),
                 "lastPayloadBytes", lastPayloadBytes
         );
+    }
+
+    /** Queued rather than sent immediately, so events ride along with the next
+     *  delta instead of causing an extra frame per transition. */
+    public void queueEvent(com.GridWeaver.model.GridEvent e) {
+        pendingEvents.add(Map.of(
+                "seq", e.seq(),
+                "ts", e.ts(),
+                "zone", e.zone().name(),
+                "from", e.from().name(),
+                "to", e.to().name(),
+                "trigger", e.trigger().name(),
+                "lf", e.loadFactor(),
+                "soc", e.avgSoc(),
+                "dwellMs", e.dwellMs(),
+                "affected", e.affectedNodes()
+        ));
+        // Guard against unbounded growth if no client is connected.
+        while (pendingEvents.size() > 200) pendingEvents.poll();
     }
 }

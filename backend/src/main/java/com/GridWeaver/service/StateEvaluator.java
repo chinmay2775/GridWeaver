@@ -15,11 +15,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Applies the transition table to every node on a fixed tick.
- *
- * Two full registry scans per tick: one for zone aggregates, one to apply
- * transitions. At 10k nodes and 4 ticks/sec that is ~80k record reads per
- * second -- negligible next to the ~10k frames/sec the ingest path handles.
+  Applies zone policy to every node on a fixed tick.
+
+  One aggregate pass feeds the five zone machines; a second pass applies the
+  resulting policy to individual nodes and collects the wire deltas. At 10k
+  nodes and 4 ticks/sec that is ~80k record reads per second -- negligible
+  next to the ~10k frames/sec the ingest path handles.
  */
 @Service
 public class StateEvaluator {
@@ -28,14 +29,15 @@ public class StateEvaluator {
 
     private final NodeRegistry registry;
     private final ZoneAggregator aggregator;
+    private final GridBroadcaster broadcaster;
+    private final NodeIndex index;
+    private final EventLog eventLog;
 
     private final Map<NodeStatus, LongAdder> transitionsInto = new EnumMap<>(NodeStatus.class);
+    private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
     private final AtomicLong ticks = new AtomicLong();
     private final AtomicLong lastTickMicros = new AtomicLong();
     private final AtomicLong lastTransitions = new AtomicLong();
-    private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
-    private final GridBroadcaster broadcaster;
-    private final NodeIndex index;
 
     @Value("${gridweaver.rules.discharge-above-load:0.80}") private double dischargeAbove;
     @Value("${gridweaver.rules.charge-below-load:0.40}")    private double chargeBelow;
@@ -43,6 +45,7 @@ public class StateEvaluator {
     @Value("${gridweaver.rules.soc-ceiling:0.95}")          private double socCeiling;
     @Value("${gridweaver.rules.idle-band-kw:0.10}")         private double idleBand;
     @Value("${gridweaver.rules.stale-after-ms:5000}")       private long staleAfterMs;
+
     @Value("${gridweaver.zone.stressed-enter:0.80}")   private double stressedEnter;
     @Value("${gridweaver.zone.stressed-exit:0.70}")    private double stressedExit;
     @Value("${gridweaver.zone.surplus-enter:0.40}")    private double surplusEnter;
@@ -50,12 +53,17 @@ public class StateEvaluator {
     @Value("${gridweaver.zone.reserve-floor:0.15}")    private double reserveFloor;
     @Value("${gridweaver.zone.reserve-restore:0.25}")  private double reserveRestore;
 
-
-    public StateEvaluator(NodeRegistry registry, ZoneAggregator aggregator,NodeIndex index, GridBroadcaster broadcaster) {
+    public StateEvaluator(NodeRegistry registry,
+                          ZoneAggregator aggregator,
+                          NodeIndex index,
+                          GridBroadcaster broadcaster,
+                          EventLog eventLog) {
         this.registry = registry;
         this.aggregator = aggregator;
         this.index = index;
         this.broadcaster = broadcaster;
+        this.eventLog = eventLog;
+
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
         }
@@ -78,22 +86,36 @@ public class StateEvaluator {
                 stressedEnter, stressedExit, surplusEnter, surplusExit,
                 reserveFloor, reserveRestore);
 
-        // Pass 1: aggregate, then step each zone machine.
+        // ---- Pass 1: aggregate, step each zone machine, audit any transition ----
         var summaries = aggregator.summarise(staleAfterMs);
         Map<Zone, ZoneStatus> policy = new EnumMap<>(Zone.class);
 
         summaries.forEach((z, s) -> {
             ZoneStateMachine m = machines.get(z);
-            ZoneStatus moved = m.fire(s.loadFactor(), s.avgBatterySoc(), now, bands);
-            if (moved != null) {
-                log.info("zone {} -> {} (load {}, soc {})",
-                        z, moved, s.loadFactor(), s.avgBatterySoc());
+            var transition = m.step(s.loadFactor(), s.avgBatterySoc(), now, bands);
+
+            if (transition != null) {
+                // Batteries are the only nodes a zone transition actually commands,
+                // so that count is the honest measure of the event's blast radius.
+                long affected = registry.all().stream()
+                        .filter(nd -> nd.zone() == z && nd.type() == NodeType.BATTERY)
+                        .count();
+
+                var recorded = eventLog.record(z, transition.from(), transition.to(),
+                        transition.trigger(), s.loadFactor(), s.avgBatterySoc(),
+                        transition.dwellMs(), affected);
+
+                broadcaster.queueEvent(recorded);
+
+                log.info("zone {} {} -> {} on {} (lf {}, soc {}, dwell {}ms, {} batteries)",
+                        z, transition.from(), transition.to(), transition.trigger(),
+                        s.loadFactor(), s.avgBatterySoc(), transition.dwellMs(), affected);
             }
             policy.put(z, m.state());
         });
 
-        // Pass 2: apply zone policy, collecting deltas as we go.
-        // Sized generously from the observed ~160 transitions/tick.
+        // ---- Pass 2: apply zone policy to nodes, collecting deltas ----
+        // Sized generously from the observed ~160 transitions/tick during ramp.
         int[] deltas = new int[2048];
         int d = 0;
         long changed = 0;
