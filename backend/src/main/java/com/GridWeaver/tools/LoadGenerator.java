@@ -24,6 +24,10 @@ public class LoadGenerator {
         int port       = args.length > 2 ? Integer.parseInt(args[2]) : 9099;
         int intervalMs = args.length > 3 ? Integer.parseInt(args[3]) : 1000;
 
+        String[] sourceIps = System.getProperty("gw.sourceIps", "").isEmpty()
+                ? new String[]{ null }
+                : System.getProperty("gw.sourceIps").split(",");
+
         String[] zones = {"A", "B", "C", "D", "E"};
         int perZone = 2000;
 
@@ -36,9 +40,14 @@ public class LoadGenerator {
 
         for (int i = 0; i < count; i++) {
             if (i > 0 && i % 100 == 0) Thread.sleep(50);
+            final int idx = i;
             String nodeId = "zone-%s/node-%04d".formatted(zones[i / perZone % 5], i % perZone);
             Thread.ofVirtual().name("gen-", i).start(() -> {
                 try (Socket s = new Socket()) {
+                    String src = sourceIps[idx % sourceIps.length];
+                    if (src != null) {
+                        s.bind(new InetSocketAddress(java.net.InetAddress.getByName(src), 0));
+                    }
                     s.connect(new InetSocketAddress(host, port), 10_000);
                     s.setTcpNoDelay(true);
                     OutputStream out = s.getOutputStream();

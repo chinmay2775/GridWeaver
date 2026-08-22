@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -29,6 +30,7 @@ import java.nio.charset.StandardCharsets;
  *   client -> T|<powerKw>|<soc>     server -> (silent)
  */
 @Component
+@ConditionalOnProperty(name = "gridweaver.ingest.mode", havingValue = "virtual", matchIfMissing = true)
 public class TelemetryIngestServer {
 
     private static final Logger log = LoggerFactory.getLogger(TelemetryIngestServer.class);

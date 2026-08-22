@@ -7,6 +7,7 @@ import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
 import com.GridWeaver.model.ZoneStatus;
 import com.GridWeaver.service.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,6 +46,9 @@ public class DebugController {
         this.eventLog = eventLog;
 
     }
+
+    @Value("${gridweaver.ingest.mode:virtual}")
+    private String ingestMode;
 
     @GetMapping("/stats")
     public Map<String, Object> stats() {
@@ -97,6 +101,24 @@ public class DebugController {
         m.put("total", eventLog.total());
         m.put("capacity", eventLog.capacity());
         m.put("events", eventLog.recent(limit, zone, status));
+        return m;
+    }
+    @GetMapping("/threads")
+    public Map<String, Object> threads() {
+        java.lang.management.ThreadMXBean tmx =
+                java.lang.management.ManagementFactory.getThreadMXBean();
+        Runtime rt = Runtime.getRuntime();
+
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("mode", ingestMode);
+        // ThreadMXBean counts platform threads only -- virtual threads are
+        // invisible to it, which is exactly the contrast we want to show.
+        m.put("platformThreadsLive", tmx.getThreadCount());
+        m.put("platformThreadsPeak", tmx.getPeakThreadCount());
+        m.put("platformThreadsStarted", tmx.getTotalStartedThreadCount());
+        m.put("activeConnections", connections.active());
+        m.put("heapUsedMb", (rt.totalMemory() - rt.freeMemory()) / 1_048_576);
+        m.put("heapMaxMb", rt.maxMemory() / 1_048_576);
         return m;
     }
 }

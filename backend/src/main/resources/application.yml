@@ -32,6 +32,7 @@ gridweaver:
     reserve-floor: 0.15
     reserve-restore: 0.25
   ingest:
+    mode: platform
     port: 9099
     backlog: 8192
     acceptors: 4
