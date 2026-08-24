@@ -32,6 +32,7 @@ public class StateEvaluator {
     private final GridBroadcaster broadcaster;
     private final NodeIndex index;
     private final EventLog eventLog;
+    private final TelemetryPublisher publisher;
 
     private final Map<NodeStatus, LongAdder> transitionsInto = new EnumMap<>(NodeStatus.class);
     private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
@@ -57,12 +58,13 @@ public class StateEvaluator {
                           ZoneAggregator aggregator,
                           NodeIndex index,
                           GridBroadcaster broadcaster,
-                          EventLog eventLog) {
+                          EventLog eventLog,TelemetryPublisher publisher) {
         this.registry = registry;
         this.aggregator = aggregator;
         this.index = index;
         this.broadcaster = broadcaster;
         this.eventLog = eventLog;
+        this.publisher = publisher;
 
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
@@ -82,6 +84,8 @@ public class StateEvaluator {
         long t0 = System.nanoTime();
         long now = System.currentTimeMillis();
         var t = thresholds();
+        long tick = ticks.incrementAndGet();
+        boolean publishTick = publisher.shouldPublish(tick);
         var bands = new ZoneStateMachine.Bands(
                 stressedEnter, stressedExit, surplusEnter, surplusExit,
                 reserveFloor, reserveRestore);
@@ -110,8 +114,13 @@ public class StateEvaluator {
                 log.info("zone {} {} -> {} on {} (lf {}, soc {}, dwell {}ms, {} batteries)",
                         z, transition.from(), transition.to(), transition.trigger(),
                         s.loadFactor(), s.avgBatterySoc(), transition.dwellMs(), affected);
+
+                publisher.publishEvent(recorded);
             }
             policy.put(z, m.state());
+            if(publishTick){
+                publisher.publishRollup(z,s,m.state(),tick);
+            }
         });
 
         // ---- Pass 2: apply zone policy to nodes, collecting deltas ----
@@ -139,8 +148,6 @@ public class StateEvaluator {
                 }
             }
         }
-
-        long tick = ticks.incrementAndGet();
         lastTransitions.set(changed);
         lastTickMicros.set((System.nanoTime() - t0) / 1_000);
 

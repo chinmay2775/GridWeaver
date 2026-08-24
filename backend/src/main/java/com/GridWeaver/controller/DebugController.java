@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.CheckedInputStream;
 
 /**
  * Day 1 sanity endpoints. /debug/stats grows into the concurrency-audit
@@ -30,21 +29,20 @@ public class DebugController {
     private final ConnectionManager connections;
     private final ZoneAggregator aggregator;
     private final StateEvaluator evaluator;
-    private final ZoneStateMachine zoneMachines;
     private final GridBroadcaster broadcaster;
     private final NodeIndex index;
     private final EventLog eventLog;
+    private final TelemetryPublisher publisher;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog) {
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
         this.evaluator = evaluator;
-        this.zoneMachines = zoneMachines;
         this.broadcaster = broadcaster;
         this.index = index;
         this.eventLog = eventLog;
-
+        this.publisher = publisher;
     }
 
     @Value("${gridweaver.ingest.mode:virtual}")
@@ -62,6 +60,7 @@ public class DebugController {
         m.put("framesRejected", connections.framesRejected());
         m.put("javaVersion", Runtime.version().toString());
         m.put("availableProcessors", Runtime.getRuntime().availableProcessors());
+        m.put("kafka", publisher.stats());
         return m;
     }
 

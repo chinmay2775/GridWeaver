@@ -21,7 +21,8 @@ management:
 
 logging:
   level:
-    com.gridweaver: DEBUG
+    org.springframework.kafka.support.LoggingProducerListener: OFF
+    org.apache.kafka.clients.NetworkClient: ERROR
 
 gridweaver:
   zone:
@@ -37,8 +38,10 @@ gridweaver:
     backlog: 8192
     acceptors: 4
   kafka:
+    enabled: true
     bootstrap-servers: localhost:9092
     topic: grid.telemetry
+    publish-every-n-ticks: 4
   rules:
     tick-ms: 250
     discharge-above-load: 0.80
