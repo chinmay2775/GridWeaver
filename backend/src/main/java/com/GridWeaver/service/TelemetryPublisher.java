@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Publishes zone rollups and transition events to Kafka.
- *
+  Publishes zone rollups and transition events to Kafka.
+
   Keyed by zone name so all messages for a zone land on the same partition,
   preserving per-zone ordering. A consumer reading partition 2 sees zone C's
   history in order, which is what makes replay meaningful.
