@@ -33,8 +33,10 @@ public class DebugController {
     private final NodeIndex index;
     private final EventLog eventLog;
     private final TelemetryPublisher publisher;
+    private final TelemetryConsumer consumer;
+    private final ZoneHistory history;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher) {
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher, TelemetryConsumer consumer, ZoneHistory history) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
@@ -43,6 +45,8 @@ public class DebugController {
         this.index = index;
         this.eventLog = eventLog;
         this.publisher = publisher;
+        this.consumer = consumer;
+        this.history = history;
     }
 
     @Value("${gridweaver.ingest.mode:virtual}")
@@ -118,6 +122,23 @@ public class DebugController {
         m.put("activeConnections", connections.active());
         m.put("heapUsedMb", (rt.totalMemory() - rt.freeMemory()) / 1_048_576);
         m.put("heapMaxMb", rt.maxMemory() / 1_048_576);
+        return m;
+    }
+    @GetMapping("/history")
+    public Map<String, Object> historyView(
+            @RequestParam(required = false) Zone zone,
+            @RequestParam(defaultValue = "60") int limit) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("capacity", history.capacity());
+        m.put("consumer", consumer.stats());
+        if (zone != null) {
+            m.put("zone", zone);
+            m.put("series", history.series(zone, limit));
+        } else {
+            Map<Zone, Object> all = new java.util.EnumMap<>(Zone.class);
+            for (Zone z : Zone.values()) all.put(z, history.series(z, limit));
+            m.put("series", all);
+        }
         return m;
     }
 }

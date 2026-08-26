@@ -42,6 +42,10 @@ gridweaver:
     bootstrap-servers: localhost:9092
     topic: grid.telemetry
     publish-every-n-ticks: 4
+    group-id: gridweaver-history
+    concurrency: 5
+  history:
+      samples-per-zone: 600
   rules:
     tick-ms: 250
     discharge-above-load: 0.80
