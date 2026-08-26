@@ -16,15 +16,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Consumes the telemetry topic and materialises zone history.
- *
- * Runs with concurrency 5, so each thread owns one partition and therefore one
- * zone. That is the payoff of the custom partitioner: a consumer thread sees a
- * single zone's rollups in strict order, with no cross-zone interleaving.
- *
- * Deliberately does NOT write back to the registry. The evaluator owns current
- * state; this owns history. Two writers to one store is how you get subtle
- * ordering bugs that only appear under load.
+  Consumes the telemetry topic and materialises zone history.
+
+  Runs with concurrency 5, so each thread owns one partition and therefore one
+  zone. That is the payoff of the custom partitioner: a consumer thread sees a
+  single zone's rollups in strict order, with no cross-zone interleaving.
+
+  Deliberately does NOT write back to the registry. The evaluator owns current
+  state; this owns history. Two writers to one store is how you get subtle
+  ordering bugs that only appear under load.
  */
 @Service
 @ConditionalOnProperty(name = "gridweaver.kafka.enabled", havingValue = "true", matchIfMissing = true)

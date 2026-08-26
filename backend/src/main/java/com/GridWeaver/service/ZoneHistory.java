@@ -10,15 +10,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Rolling time-series of zone rollups, built from the Kafka stream.
- *
- * This is the reason the consumer exists as a separate concern: the registry
- * holds only current state, and reconstructing "what did zone C look like two
- * minutes ago" from live data is impossible. The topic is the source of truth
- * for history; this is a materialised view of it.
- *
- * Per-zone ring buffers rather than one shared list -- each consumer thread
- * owns exactly one zone's partition, so writes never contend.
+  Rolling time-series of zone rollups, built from the Kafka stream.
+
+  This is the reason the consumer exists as a separate concern: the registry
+  holds only current state, and reconstructing "what did zone C look like two
+  minutes ago" from live data is impossible. The topic is the source of truth
+  for history; this is a materialised view of it.
+
+  Per-zone ring buffers rather than one shared list -- each consumer thread
+  owns exactly one zone's partition, so writes never contend.
  */
 @Service
 public class ZoneHistory {
