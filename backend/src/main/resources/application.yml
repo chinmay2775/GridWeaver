@@ -14,7 +14,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,threaddump
+        include: health,info,metrics,threaddump,prometheus
   endpoint:
     health:
       show-details: always
@@ -44,6 +44,8 @@ gridweaver:
     publish-every-n-ticks: 4
     group-id: gridweaver-history
     concurrency: 5
+    lag-poll-ms: 5000
+    lag-warn-threshold: 500
   history:
       samples-per-zone: 600
   rules:

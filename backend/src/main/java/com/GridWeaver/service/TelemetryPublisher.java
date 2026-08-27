@@ -43,6 +43,7 @@ public class TelemetryPublisher {
     private final LongAdder rollupsPublished = new LongAdder();
     private final LongAdder eventsPublished = new LongAdder();
     private final LongAdder failures = new LongAdder();
+    private final LongAdder bufferFull = new LongAdder();
     private volatile String lastError;
 
     public TelemetryPublisher(KafkaTemplate<String, String> kafka, JsonMapper json) {
@@ -103,10 +104,14 @@ public class TelemetryPublisher {
                     counter.increment();
                 }
             });
+        } catch (org.apache.kafka.common.errors.TimeoutException te) {
+            // MAX_BLOCK_MS elapsed waiting for buffer space or metadata.
+            // This is the backpressure signal: the broker cannot keep up with us.
+            bufferFull.increment();
+            lastError = "buffer full / metadata timeout";
         } catch (Exception e) {
             failures.increment();
             lastError = e.toString();
-            log.debug("publish failed: {}", e.toString());
         }
     }
 

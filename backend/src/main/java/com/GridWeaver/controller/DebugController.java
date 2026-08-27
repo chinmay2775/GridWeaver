@@ -35,8 +35,9 @@ public class DebugController {
     private final TelemetryPublisher publisher;
     private final TelemetryConsumer consumer;
     private final ZoneHistory history;
+    private final ConsumerLagMonitor lagMonitor;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher, TelemetryConsumer consumer, ZoneHistory history) {
+    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher, TelemetryConsumer consumer, ZoneHistory history, ConsumerLagMonitor lagMonitor) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
@@ -47,6 +48,7 @@ public class DebugController {
         this.publisher = publisher;
         this.consumer = consumer;
         this.history = history;
+        this.lagMonitor = lagMonitor;
     }
 
     @Value("${gridweaver.ingest.mode:virtual}")
@@ -140,5 +142,9 @@ public class DebugController {
             m.put("series", all);
         }
         return m;
+    }
+    @GetMapping("/lag")
+    public Map<String, Object> lag() {
+        return lagMonitor.stats();
     }
 }
