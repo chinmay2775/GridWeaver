@@ -12,14 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Per-node power for the heatmap overlay.
- *
- * Separate from the WebSocket delta stream on purpose: power changes on every
- * frame (~10k/sec) while status changes rarely, so streaming power would be
- * ~60x the traffic. The overlay polls this only while it is switched on.
- *
- * Returns flat triples [lat, lng, weight, ...] rather than objects -- 10k
- * objects with named fields is ~1.5MB of JSON, the flat array is ~250KB.
+ Per-node power for the heatmap overlay.
+
+ Separate from the WebSocket delta stream on purpose: power changes on every
+ frame (~10k/sec) while status changes rarely, so streaming power would be
+ ~60x the traffic. The overlay polls this only while it is switched on.
+ Returns flat triples [lat, lng, weight, ...] rather than objects -- 10k
+ objects with named fields is ~1.5MB of JSON, the flat array is ~250KB.
  */
 @RestController
 @RequestMapping("/api/heatmap")
