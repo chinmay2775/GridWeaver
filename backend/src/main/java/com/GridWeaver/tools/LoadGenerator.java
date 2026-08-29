@@ -58,17 +58,18 @@ public class LoadGenerator {
                     out.flush();
 
                     String ack = in.readLine();
-                    if (!"OK".equals(ack)) {
+                    if (ack == null || !ack.startsWith("OK")) {
                         failed.incrementAndGet();
                         ready.countDown();
                         return;
                     }
+                    String type = ack.contains("|")
+                            ? ack.substring(ack.indexOf('|') + 1).trim()
+                            : "SOLAR";
                     connected.incrementAndGet();
                     ready.countDown();
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
-                    int bucket = Math.abs(nodeId.hashCode()) % 100;
-                    String type = bucket < 55 ? "SOLAR" : bucket < 85 ? "LOAD" : "BATTERY";
                     double soc = rnd.nextDouble(0.3, 0.8);
                     while (!Thread.currentThread().isInterrupted()) {
                         double power;

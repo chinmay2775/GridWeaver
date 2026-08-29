@@ -1,6 +1,7 @@
 package com.GridWeaver.ingestion;
 
 import com.GridWeaver.config.NodeRegistry;
+import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.TelemetryFrame;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -122,11 +123,12 @@ public class PlatformThreadIngestServer {
                 return;
             }
             nodeId = hello.substring(6);
-            if (registry.get(nodeId) == null) {
+            NodeState node = registry.get(nodeId);
+            if (node == null) {
                 reply(socket, "ERR|unknown node\n");
                 return;
             }
-            reply(socket, "OK\n");
+            reply(socket, "OK|" + node.type() + "\n");
             connections.onConnect();
 
             final String id = nodeId;

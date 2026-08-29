@@ -18,7 +18,7 @@ import java.util.List;
  frame (~10k/sec) while status changes rarely, so streaming power would be
  ~60x the traffic. The overlay polls this only while it is switched on.
  Returns flat triples [lat, lng, weight, ...] rather than objects -- 10k
- objects with named fields is ~1.5MB of JSON, the flat array is ~250KB.
+ notepad tools\gen_nodes.pyobjects with named fields is ~1.5MB of JSON, the flat array is ~250KB.
  */
 @RestController
 @RequestMapping("/api/heatmap")

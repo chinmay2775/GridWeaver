@@ -1,6 +1,7 @@
 package com.GridWeaver.ingestion;
 
 import com.GridWeaver.config.NodeRegistry;
+import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.TelemetryFrame;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -102,11 +103,14 @@ public class TelemetryIngestServer {
                 return;
             }
             nodeId = hello.substring(6);
-            if (registry.get(nodeId) == null) {
+            NodeState node = registry.get(nodeId);
+            if (node == null) {
                 reply(socket, "ERR|unknown node\n");
                 return;
             }
-            reply(socket, "OK\n");
+            // Echo the type back so the generator emits telemetry consistent
+            // with what the registry believes this node is.
+            reply(socket, "OK|" + node.type() + "\n");
             connections.onConnect();
 
             // --- frame loop: blocks here for the life of the connection ---
@@ -123,7 +127,7 @@ public class TelemetryIngestServer {
             }
         } catch (Exception e) {
             if (running) {
-                log.debug("connection {} dropped: {}", nodeId, e.toString());
+                log.warn("connection {} failed: {}", nodeId, e.toString());
             }
         } finally {
             if (nodeId != null) {

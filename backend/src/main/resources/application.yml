@@ -21,8 +21,14 @@ management:
 
 logging:
   level:
-    org.springframework.kafka.support.LoggingProducerListener: OFF
+    com.GridWeaver: DEBUG
+    org.apache.kafka.common.config.AbstractConfig: WARN
+    org.apache.kafka.clients.Metadata: WARN
     org.apache.kafka.clients.NetworkClient: ERROR
+    org.apache.kafka.common.utils.AppInfoParser: WARN
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
+    org.apache.kafka.common.telemetry.internals.KafkaMetricsCollector: WARN
+    org.springframework.kafka.support.LoggingProducerListener: OFF
 
 gridweaver:
   zone:
@@ -33,7 +39,7 @@ gridweaver:
     reserve-floor: 0.15
     reserve-restore: 0.25
   ingest:
-    mode: platform
+    mode: virtual
     port: 9099
     backlog: 8192
     acceptors: 4
