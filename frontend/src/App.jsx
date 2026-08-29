@@ -186,7 +186,7 @@ export default function App() {
             radius: 25,
             blur: 30,
             maxZoom: 14,
-            max: 5,
+            max: 8,
             minOpacity: 0.35,
             gradient,
           }).addTo(map);
