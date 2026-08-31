@@ -5,6 +5,7 @@ import com.GridWeaver.ingestion.ConnectionManager;
 import com.GridWeaver.ingestion.GridBroadcaster;
 import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
+import com.GridWeaver.model.ZoneBalance;
 import com.GridWeaver.model.ZoneStatus;
 import com.GridWeaver.service.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +37,21 @@ public class DebugController {
     private final TelemetryConsumer consumer;
     private final ZoneHistory history;
     private final ConsumerLagMonitor lagMonitor;
+    private final BalanceCalculator calculator;
 
-    public DebugController(NodeRegistry registry, ConnectionManager connections, ZoneAggregator aggregator, StateEvaluator evaluator, ZoneStateMachine zoneMachines, GridBroadcaster broadcaster, NodeIndex index, EventLog eventLog, TelemetryPublisher publisher, TelemetryConsumer consumer, ZoneHistory history, ConsumerLagMonitor lagMonitor) {
+    public DebugController(NodeRegistry registry,
+                           ConnectionManager connections,
+                           ZoneAggregator aggregator,
+                           StateEvaluator evaluator,
+                           ZoneStateMachine zoneMachines,
+                           GridBroadcaster broadcaster,
+                           NodeIndex index,
+                           EventLog eventLog,
+                           TelemetryPublisher publisher,
+                           TelemetryConsumer consumer,
+                           ZoneHistory history,
+                           ConsumerLagMonitor lagMonitor,
+                           BalanceCalculator calculator) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
@@ -49,6 +63,7 @@ public class DebugController {
         this.consumer = consumer;
         this.history = history;
         this.lagMonitor = lagMonitor;
+        this.calculator = calculator;
     }
 
     @Value("${gridweaver.ingest.mode:virtual}")
@@ -146,5 +161,24 @@ public class DebugController {
     @GetMapping("/lag")
     public Map<String, Object> lag() {
         return lagMonitor.stats();
+    }
+    @GetMapping("/balance")
+    public Map<String, Object> balance() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        var balances = evaluator.balances();
+        m.put("interconnectKw", calculator.interconnectKw());
+        m.put("zones", balances);
+
+        double totalExportable = balances.values().stream()
+                .mapToDouble(ZoneBalance::exportableKw).sum();
+        double totalDeficit = balances.values().stream()
+                .mapToDouble(ZoneBalance::deficitKw).sum();
+
+        m.put("totalExportableKw", Math.round(totalExportable * 100.0) / 100.0);
+        m.put("totalDeficitKw", Math.round(totalDeficit * 100.0) / 100.0);
+        // If deficit exceeds exportable, no amount of rebalancing fixes the
+        // grid -- it needs more generation, not better distribution.
+        m.put("gridCanSelfBalance", totalExportable >= totalDeficit);
+        return m;
     }
 }

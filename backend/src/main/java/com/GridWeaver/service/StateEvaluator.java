@@ -33,12 +33,14 @@ public class StateEvaluator {
     private final NodeIndex index;
     private final EventLog eventLog;
     private final TelemetryPublisher publisher;
+    private final BalanceCalculator balance;
 
     private final Map<NodeStatus, LongAdder> transitionsInto = new EnumMap<>(NodeStatus.class);
     private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
     private final AtomicLong ticks = new AtomicLong();
     private final AtomicLong lastTickMicros = new AtomicLong();
     private final AtomicLong lastTransitions = new AtomicLong();
+    private volatile Map<Zone, ZoneBalance> lastBalance = Map.of();
 
     @Value("${gridweaver.rules.discharge-above-load:0.80}") private double dischargeAbove;
     @Value("${gridweaver.rules.charge-below-load:0.40}")    private double chargeBelow;
@@ -58,13 +60,16 @@ public class StateEvaluator {
                           ZoneAggregator aggregator,
                           NodeIndex index,
                           GridBroadcaster broadcaster,
-                          EventLog eventLog,TelemetryPublisher publisher) {
+                          EventLog eventLog,
+                          TelemetryPublisher publisher,
+                          BalanceCalculator balance) {
         this.registry = registry;
         this.aggregator = aggregator;
         this.index = index;
         this.broadcaster = broadcaster;
         this.eventLog = eventLog;
         this.publisher = publisher;
+        this.balance = balance;
 
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
@@ -93,6 +98,7 @@ public class StateEvaluator {
         // ---- Pass 1: aggregate, step each zone machine, audit any transition ----
         var summaries = aggregator.summarise(staleAfterMs);
         Map<Zone, ZoneStatus> policy = new EnumMap<>(Zone.class);
+
 
         summaries.forEach((z, s) -> {
             ZoneStateMachine m = machines.get(z);
@@ -151,6 +157,8 @@ public class StateEvaluator {
         lastTransitions.set(changed);
         lastTickMicros.set((System.nanoTime() - t0) / 1_000);
 
+        // Recompute balances against the policy the machines just settled on.
+        lastBalance = balance.compute(policy);
         // Broadcast on a virtual thread so a slow client cannot delay the next tick.
         int[] payload = java.util.Arrays.copyOf(deltas, d);
         Thread.ofVirtual().start(() -> broadcaster.publish(tick, payload));
@@ -188,5 +196,8 @@ public class StateEvaluator {
             out.put(z, v);
         });
         return out;
+    }
+    public Map<Zone, ZoneBalance> balances() {
+        return lastBalance;
     }
 }

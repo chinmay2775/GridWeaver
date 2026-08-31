@@ -64,3 +64,9 @@ gridweaver:
     stale-after-ms: 5000
   eventlog:
     capacity: 4096
+  balance:
+    interconnect-kw: 2500      # max transfer between adjacent zones
+    reserve-margin: 0.10       # hold back 10% of surplus locally
+    soc-ceiling: 0.95
+    soc-floor: 0.20
+    stale-after-ms: 5000
