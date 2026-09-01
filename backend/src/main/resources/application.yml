@@ -65,8 +65,10 @@ gridweaver:
   eventlog:
     capacity: 4096
   balance:
-    interconnect-kw: 2500      # max transfer between adjacent zones
-    reserve-margin: 0.10       # hold back 10% of surplus locally
+    interconnect-kw: 2500
+    reserve-margin: 0.10
     soc-ceiling: 0.95
     soc-floor: 0.20
     stale-after-ms: 5000
+    min-transfer-kw: 50      # below this the transfer is not worth scheduling
+    max-hops: 4

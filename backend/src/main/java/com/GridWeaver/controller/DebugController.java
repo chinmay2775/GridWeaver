@@ -38,6 +38,7 @@ public class DebugController {
     private final ZoneHistory history;
     private final ConsumerLagMonitor lagMonitor;
     private final BalanceCalculator calculator;
+    private final ZoneRebalancer rebalancer;
 
     public DebugController(NodeRegistry registry,
                            ConnectionManager connections,
@@ -51,7 +52,8 @@ public class DebugController {
                            TelemetryConsumer consumer,
                            ZoneHistory history,
                            ConsumerLagMonitor lagMonitor,
-                           BalanceCalculator calculator) {
+                           BalanceCalculator calculator,
+                           ZoneRebalancer rebalancer) {
         this.registry = registry;
         this.connections = connections;
         this.aggregator = aggregator;
@@ -64,6 +66,7 @@ public class DebugController {
         this.history = history;
         this.lagMonitor = lagMonitor;
         this.calculator = calculator;
+        this.rebalancer = rebalancer;
     }
 
     @Value("${gridweaver.ingest.mode:virtual}")
@@ -179,6 +182,14 @@ public class DebugController {
         // If deficit exceeds exportable, no amount of rebalancing fixes the
         // grid -- it needs more generation, not better distribution.
         m.put("gridCanSelfBalance", totalExportable >= totalDeficit);
+        return m;
+    }
+
+    @GetMapping("/transfers")
+    public Map<String, Object> transfers() {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("plan", evaluator.transfers());
+        m.put("stats", rebalancer.stats());
         return m;
     }
 }

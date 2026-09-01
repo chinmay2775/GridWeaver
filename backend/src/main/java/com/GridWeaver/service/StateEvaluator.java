@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
@@ -34,6 +35,7 @@ public class StateEvaluator {
     private final EventLog eventLog;
     private final TelemetryPublisher publisher;
     private final BalanceCalculator balance;
+    private final ZoneRebalancer rebalancer;
 
     private final Map<NodeStatus, LongAdder> transitionsInto = new EnumMap<>(NodeStatus.class);
     private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
@@ -41,6 +43,7 @@ public class StateEvaluator {
     private final AtomicLong lastTickMicros = new AtomicLong();
     private final AtomicLong lastTransitions = new AtomicLong();
     private volatile Map<Zone, ZoneBalance> lastBalance = Map.of();
+    private volatile List<PowerTransfer> lastTransfers = List.of();
 
     @Value("${gridweaver.rules.discharge-above-load:0.80}") private double dischargeAbove;
     @Value("${gridweaver.rules.charge-below-load:0.40}")    private double chargeBelow;
@@ -62,7 +65,8 @@ public class StateEvaluator {
                           GridBroadcaster broadcaster,
                           EventLog eventLog,
                           TelemetryPublisher publisher,
-                          BalanceCalculator balance) {
+                          BalanceCalculator balance,
+                          ZoneRebalancer rebalancer) {
         this.registry = registry;
         this.aggregator = aggregator;
         this.index = index;
@@ -70,6 +74,7 @@ public class StateEvaluator {
         this.eventLog = eventLog;
         this.publisher = publisher;
         this.balance = balance;
+        this.rebalancer = rebalancer;
 
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
@@ -159,6 +164,17 @@ public class StateEvaluator {
 
         // Recompute balances against the policy the machines just settled on.
         lastBalance = balance.compute(policy);
+        // Transfers are derived from balance, never from zone STATUS -- a zone
+        // can be in SURPLUS state (low load factor) while running a net power
+        // deficit. Balance is the physical truth; status is the policy signal.
+        List<PowerTransfer> transfers = rebalancer.plan(lastBalance);
+
+        // Only log when the plan actually changes, otherwise this fires 4x/sec.
+        if (!sameShape(transfers, lastTransfers)) {
+            transfers.forEach(tr -> log.info("transfer {} -> {}: {} kW ({}% of need)",
+                    tr.from(), tr.to(), tr.amountKw(), Math.round(tr.coverage() * 100)));
+        }
+        lastTransfers = transfers;
         // Broadcast on a virtual thread so a slow client cannot delay the next tick.
         int[] payload = java.util.Arrays.copyOf(deltas, d);
         Thread.ofVirtual().start(() -> broadcaster.publish(tick, payload));
@@ -199,5 +215,19 @@ public class StateEvaluator {
     }
     public Map<Zone, ZoneBalance> balances() {
         return lastBalance;
+    }
+    /** Cheap comparison: same routes in the same order, ignoring amount drift. */
+    private static boolean sameShape(List<PowerTransfer> a, List<PowerTransfer> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            if (a.get(i).from() != b.get(i).from() || a.get(i).to() != b.get(i).to()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public List<PowerTransfer> transfers() {
+        return lastTransfers;
     }
 }
