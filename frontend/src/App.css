@@ -149,3 +149,9 @@ body, #root {
   font-size: 10px;
   color: #64748b;
 }
+.flow-label {
+  font: 600 11px ui-monospace, monospace;
+  color: #38bdf8;
+  white-space: nowrap;
+  text-shadow: 0 0 4px #0b0f16, 0 0 8px #0b0f16;
+}

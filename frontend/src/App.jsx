@@ -27,6 +27,7 @@ export default function App() {
   const mapRef   = useRef(null);
   const markers  = useRef([]);       // index-aligned with the backend node index
   const statuses = useRef(null);     // Int8Array of current status ordinals
+  const flowRef = useRef(null);
 
   const [conn, setConn]     = useState('connecting');
   const [zones, setZones]   = useState([]);
@@ -50,6 +51,10 @@ export default function App() {
       maxZoom: 19,
     }).addTo(map);
 
+    const ZONE_CENTRES = {
+      A: [18.54, 73.774], B: [18.54, 73.822], C: [18.54, 73.870],
+      D: [18.54, 73.918], E: [18.54, 73.966],
+    };
     ZONE_BOUNDS.forEach(({ zone, lngLo, lngHi }) => {
       L.rectangle([[LAT_LO, lngLo], [LAT_HI, lngHi]], {
         color: '#64748b', weight: 1, fillOpacity: 0.04, interactive: false,
@@ -105,6 +110,7 @@ export default function App() {
         if (msg.events?.length) {
           setEvents(prev => [...msg.events.reverse(), ...prev].slice(0, 100));
         }
+        if (msg.transfers) drawFlows(msg.transfers);
       };
 
       socket.onclose = () => {
@@ -198,6 +204,39 @@ export default function App() {
         console.error('heatmap poll failed:', e);
       }
     };
+        // Flow arrows between zone centres. Redrawn wholesale each tick rather
+    // than diffed -- at most a handful of routes, so the churn is trivial and
+    // the code stays obvious.
+    const drawFlows = (transfers) => {
+      if (flowRef.current) map.removeLayer(flowRef.current);
+      if (!transfers.length) { flowRef.current = null; return; }
+
+      const layer = L.layerGroup();
+      const maxKw = Math.max(...transfers.map(t => t.kw), 1);
+
+      transfers.forEach(({ from, to, kw }) => {
+        const a = ZONE_CENTRES[from], b = ZONE_CENTRES[to];
+        if (!a || !b) return;
+
+        // Width encodes magnitude; the eye reads thickness faster than labels.
+        const weight = 2 + (kw / maxKw) * 8;
+        L.polyline([a, b], {
+          color: '#38bdf8', weight, opacity: 0.75, dashArray: '10 6',
+        }).addTo(layer);
+
+        const mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        L.marker(mid, {
+          icon: L.divIcon({
+            className: 'flow-label',
+            html: `${from}→${to} ${Math.round(kw)} kW`,
+          }),
+          interactive: false,
+        }).addTo(layer);
+      });
+
+      layer.addTo(map);
+      flowRef.current = layer;
+    };
 
     poll();
     // 2s, not the 250ms tick: this is a ~250KB payload and the geographic
@@ -259,23 +298,24 @@ export default function App() {
         <div className="events">
           {events.length === 0 && <p className="empty">No transitions yet</p>}
           {events
-            .filter(e => !zoneFilter || e.zone === zoneFilter)
+            .filter(e => !zoneFilter || e.zone === zoneFilter || e.source === zoneFilter)
             .map(e => (
               <div key={e.seq} className="event">
                 <div className="event-head">
                   <button className="zone-tag" onClick={() => setZoneFilter(e.zone)}>
-                    {e.zone}
+                    {e.kind === 'ZONE_TRANSITION' ? e.zone : `${e.source}→${e.zone}`}
                   </button>
-                  <span className={`to ${e.to.toLowerCase()}`}>{e.to}</span>
+                  <span className={`to ${(e.to || e.kind).toLowerCase()}`}>
+                    {e.kind === 'ZONE_TRANSITION' ? e.to : e.kind.replace('TRANSFER_', '')}
+                  </span>
                   <span className="time">
                     {new Date(e.ts).toLocaleTimeString([], { hour12: false })}
                   </span>
                 </div>
                 <div className="event-detail">
-                  {e.from} → {e.to} · {e.trigger.replace('_', ' ').toLowerCase()}
-                </div>
-                <div className="event-meta">
-                  lf {e.lf.toFixed(2)} · soc {e.soc.toFixed(2)} · held {(e.dwellMs / 1000).toFixed(1)}s
+                  {e.kind === 'ZONE_TRANSITION'
+                    ? `${e.from} → ${e.to} · ${e.trigger.replace('_', ' ').toLowerCase()}`
+                    : `${Math.round(e.amountKw)} kW`}
                 </div>
               </div>
             ))}
