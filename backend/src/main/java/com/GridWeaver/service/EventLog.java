@@ -1,8 +1,6 @@
 package com.GridWeaver.service;
 
-import com.GridWeaver.model.GridEvent;
-import com.GridWeaver.model.Zone;
-import com.GridWeaver.model.ZoneStatus;
+import com.GridWeaver.model.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -36,13 +34,20 @@ public class EventLog {
         this.mask = size - 1;
     }
 
-    public GridEvent record(Zone zone, ZoneStatus from, ZoneStatus to,
-                            com.GridWeaver.model.ZoneEvent trigger,
-                            double loadFactor, double avgSoc,
-                            long dwellMs, long affectedNodes) {
+    public GridEvent recordTransition(Zone zone, ZoneStatus from, ZoneStatus to,
+                                      ZoneEvent trigger, double loadFactor, double avgSoc,
+                                      long dwellMs, long affectedNodes) {
         long n = seq.incrementAndGet();
-        GridEvent e = new GridEvent(n, System.currentTimeMillis(), zone, from, to,
-                trigger, loadFactor, avgSoc, dwellMs, affectedNodes);
+        GridEvent e = GridEvent.transition(n, zone, from, to, trigger,
+                loadFactor, avgSoc, dwellMs, affectedNodes);
+        ring[(int) ((n - 1) & mask)] = e;
+        return e;
+    }
+
+    public GridEvent recordTransfer(EventKind kind, Zone source, Zone sink,
+                                    double amountKw, double sinkLoadFactor, long dwellMs) {
+        long n = seq.incrementAndGet();
+        GridEvent e = GridEvent.transfer(n, kind, source, sink, amountKw, sinkLoadFactor, dwellMs);
         ring[(int) ((n - 1) & mask)] = e;
         return e;
     }
@@ -58,19 +63,20 @@ public class EventLog {
 //     @param zone   optional filter, null for all
 //     @param status optional filter on the destination state, null for all
 //
-    public List<GridEvent> recent(int limit, Zone zone, ZoneStatus status) {
-        long n = seq.get();
-        int scan = (int) Math.min(n, ring.length);
-        List<GridEvent> out = new ArrayList<>(Math.min(limit, scan));
+    public List<GridEvent> recent(int limit, Zone zone, ZoneStatus status, EventKind kind) {
+    long n = seq.get();
+    int scan = (int) Math.min(n, ring.length);
+    List<GridEvent> out = new ArrayList<>(Math.min(limit, scan));
 
-        for (int i = 0; i < scan && out.size() < limit; i++) {
-            GridEvent e = ring[(int) ((n - 1 - i) & mask)];
-            if (e == null) continue;
-            if (zone != null && e.zone() != zone) continue;
-            if (status != null && e.to() != status) continue;
-            out.add(e);
-        }
-        return out;
+    for (int i = 0; i < scan && out.size() < limit; i++) {
+        GridEvent e = ring[(int) ((n - 1 - i) & mask)];
+        if (e == null) continue;
+        if (zone != null && e.zone() != zone && e.counterparty() != zone) continue;
+        if (status != null && e.to() != status) continue;
+        if (kind != null && e.kind() != kind) continue;
+        out.add(e);
+    }
+    return out;
     }
 
     // Per-zone transition counts, for the summary strip in the UI.

@@ -1,10 +1,13 @@
 package com.GridWeaver.ingestion;
 
 import com.GridWeaver.config.NodeRegistry;
+import com.GridWeaver.model.EventKind;
 import com.GridWeaver.model.NodeState;
 import com.GridWeaver.model.Zone;
 import com.GridWeaver.model.ZoneStatus;
 import com.GridWeaver.service.NodeIndex;
+import com.GridWeaver.service.StateEvaluator;
+import com.GridWeaver.service.TransferTracker;
 import com.GridWeaver.service.ZoneAggregator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,7 @@ public class GridBroadcaster extends TextWebSocketHandler {
     private final NodeIndex index;
     private final ZoneAggregator aggregator;
     private final JsonMapper json;
+    private volatile com.GridWeaver.service.StateEvaluator evaluator;
 
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
     private final LongAdder messagesSent = new LongAdder();
@@ -57,6 +61,12 @@ public class GridBroadcaster extends TextWebSocketHandler {
 
     private final java.util.concurrent.ConcurrentLinkedQueue<Object> pendingEvents =
             new java.util.concurrent.ConcurrentLinkedQueue<>();
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public void setEvaluator(@org.springframework.context.annotation.Lazy
+                             com.GridWeaver.service.StateEvaluator evaluator) {
+        this.evaluator = evaluator;
+    }
 
     public GridBroadcaster(NodeRegistry registry, NodeIndex index,
                            ZoneAggregator aggregator, JsonMapper json) {
@@ -118,10 +128,12 @@ public class GridBroadcaster extends TextWebSocketHandler {
 
     public void publish(long tick, int[] deltas) {
         if (sessions.isEmpty()) return;
+
         List<Object> events = new ArrayList<>();
         for (Object o = pendingEvents.poll(); o != null; o = pendingEvents.poll()) {
             events.add(o);
         }
+
         String message;
         try {
             var payload = Map.of(
@@ -129,7 +141,9 @@ public class GridBroadcaster extends TextWebSocketHandler {
                     "t", tick,
                     "ts", System.currentTimeMillis(),
                     "d", deltas,
-                    "zones", zonePayload()
+                    "zones", zonePayload(),
+                    "transfers", transferPayload(),
+                    "events", events
             );
             message = json.writeValueAsString(payload);
         } catch (Exception e) {
@@ -186,19 +200,25 @@ public class GridBroadcaster extends TextWebSocketHandler {
     /** Queued rather than sent immediately, so events ride along with the next
      *  delta instead of causing an extra frame per transition. */
     public void queueEvent(com.GridWeaver.model.GridEvent e) {
-        pendingEvents.add(Map.of(
-                "seq", e.seq(),
-                "ts", e.ts(),
-                "zone", e.zone().name(),
-                "from", e.from().name(),
-                "to", e.to().name(),
-                "trigger", e.trigger().name(),
-                "lf", e.loadFactor(),
-                "soc", e.avgSoc(),
-                "dwellMs", e.dwellMs(),
-                "affected", e.affectedNodes()
-        ));
-        // Guard against unbounded growth if no client is connected.
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        m.put("seq", e.seq());
+        m.put("ts", e.ts());
+        m.put("zone", e.zone().name());
+        m.put("lf", e.loadFactor());
+        m.put("dwellMs", e.dwellMs());
+
+        pendingEvents.add(m);
         while (pendingEvents.size() > 200) pendingEvents.poll();
+    }
+
+    /** Current flow routes for the map overlay. Small enough to send whole
+     *  every tick -- at most a handful of routes between five zones. */
+    private List<Map<String, Object>> transferPayload() {
+        return evaluator.transfers().stream()
+                .map(t -> Map.<String, Object>of(
+                        "from", t.from().name(),
+                        "to", t.to().name(),
+                        "kw", t.amountKw()))
+                .toList();
     }
 }

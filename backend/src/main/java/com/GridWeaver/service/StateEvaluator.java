@@ -36,6 +36,7 @@ public class StateEvaluator {
     private final TelemetryPublisher publisher;
     private final BalanceCalculator balance;
     private final ZoneRebalancer rebalancer;
+    private final TransferTracker tracker;
 
     private final Map<NodeStatus, LongAdder> transitionsInto = new EnumMap<>(NodeStatus.class);
     private final Map<Zone, ZoneStateMachine> machines = new EnumMap<>(Zone.class);
@@ -66,7 +67,8 @@ public class StateEvaluator {
                           EventLog eventLog,
                           TelemetryPublisher publisher,
                           BalanceCalculator balance,
-                          ZoneRebalancer rebalancer) {
+                          ZoneRebalancer rebalancer,
+                          TransferTracker tracker) {
         this.registry = registry;
         this.aggregator = aggregator;
         this.index = index;
@@ -75,6 +77,7 @@ public class StateEvaluator {
         this.publisher = publisher;
         this.balance = balance;
         this.rebalancer = rebalancer;
+        this.tracker = tracker;
 
         for (NodeStatus s : NodeStatus.values()) {
             transitionsInto.put(s, new LongAdder());
@@ -116,23 +119,24 @@ public class StateEvaluator {
                         .filter(nd -> nd.zone() == z && nd.type() == NodeType.BATTERY)
                         .count();
 
-                var recorded = eventLog.record(z, transition.from(), transition.to(),
+                var recorded = eventLog.recordTransition(z, transition.from(), transition.to(),
                         transition.trigger(), s.loadFactor(), s.avgBatterySoc(),
                         transition.dwellMs(), affected);
 
                 broadcaster.queueEvent(recorded);
+                publisher.publishEvent(recorded);
 
                 log.info("zone {} {} -> {} on {} (lf {}, soc {}, dwell {}ms, {} batteries)",
                         z, transition.from(), transition.to(), transition.trigger(),
                         s.loadFactor(), s.avgBatterySoc(), transition.dwellMs(), affected);
-
-                publisher.publishEvent(recorded);
             }
             policy.put(z, m.state());
-            if(publishTick){
-                publisher.publishRollup(z,s,m.state(),tick);
+
+            if (publishTick) {
+                publisher.publishRollup(z, s, m.state(), tick);
             }
         });
+
 
         // ---- Pass 2: apply zone policy to nodes, collecting deltas ----
         // Sized generously from the observed ~160 transitions/tick during ramp.
@@ -169,10 +173,13 @@ public class StateEvaluator {
         // deficit. Balance is the physical truth; status is the policy signal.
         List<PowerTransfer> transfers = rebalancer.plan(lastBalance);
 
-        // Only log when the plan actually changes, otherwise this fires 4x/sec.
-        if (!sameShape(transfers, lastTransfers)) {
-            transfers.forEach(tr -> log.info("transfer {} -> {}: {} kW ({}% of need)",
-                    tr.from(), tr.to(), tr.amountKw(), Math.round(tr.coverage() * 100)));
+        for (var change : tracker.update(transfers, now)) {
+            var event = eventLog.recordTransfer(
+                    change.kind(), change.from(), change.to(), change.amountKw(),
+                    lastBalance.get(change.to()).deficitKw(), change.dwellMs());
+            broadcaster.queueEvent(event);
+            log.info("{} {} -> {}: {} kW", change.kind(), change.from(), change.to(),
+                    change.amountKw());
         }
         lastTransfers = transfers;
         // Broadcast on a virtual thread so a slow client cannot delay the next tick.
@@ -215,16 +222,6 @@ public class StateEvaluator {
     }
     public Map<Zone, ZoneBalance> balances() {
         return lastBalance;
-    }
-    /** Cheap comparison: same routes in the same order, ignoring amount drift. */
-    private static boolean sameShape(List<PowerTransfer> a, List<PowerTransfer> b) {
-        if (a.size() != b.size()) return false;
-        for (int i = 0; i < a.size(); i++) {
-            if (a.get(i).from() != b.get(i).from() || a.get(i).to() != b.get(i).to()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public List<PowerTransfer> transfers() {

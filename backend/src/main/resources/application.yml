@@ -72,3 +72,5 @@ gridweaver:
     stale-after-ms: 5000
     min-transfer-kw: 50      # below this the transfer is not worth scheduling
     max-hops: 4
+    transfer-change-threshold: 0.60          # log a change at 25%+ amount shift
+    transfer-change-min-interval-ms: 60000
