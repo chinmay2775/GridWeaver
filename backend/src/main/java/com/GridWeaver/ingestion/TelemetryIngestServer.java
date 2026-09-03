@@ -17,6 +17,8 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Blocking TCP ingestion server, one virtual thread per connection.
@@ -52,6 +54,7 @@ public class TelemetryIngestServer {
     private ServerSocket serverSocket;
     private Thread acceptThread;
     private final java.util.List<Thread> acceptThreads = new java.util.ArrayList<>();
+    private final Map<Socket, Boolean> liveSockets = new ConcurrentHashMap<>();
 
     public TelemetryIngestServer(NodeRegistry registry, ConnectionManager connections) {
         this.registry = registry;
@@ -112,7 +115,7 @@ public class TelemetryIngestServer {
             // with what the registry believes this node is.
             reply(socket, "OK|" + node.type() + "\n");
             connections.onConnect();
-
+            liveSockets.put(socket, Boolean.TRUE);
             // --- frame loop: blocks here for the life of the connection ---
             String line;
             final String id = nodeId;
@@ -130,9 +133,8 @@ public class TelemetryIngestServer {
                 log.warn("connection {} failed: {}", nodeId, e.toString());
             }
         } finally {
-            if (nodeId != null) {
-                connections.onDisconnect();
-            }
+            liveSockets.remove(socket);
+            if (nodeId != null) connections.onDisconnect();
         }
     }
 
@@ -145,8 +147,26 @@ public class TelemetryIngestServer {
     @PreDestroy
     public void stop() throws Exception {
         running = false;
+
+        // Close the listening socket first so no new connections arrive while
+        // we drain. Existing handlers keep running -- their sockets are
+        // independent of the acceptor.
         if (serverSocket != null) serverSocket.close();
         for (Thread t : acceptThreads) t.join(2000);
-        log.info("Telemetry ingest stopped. Peak connections: {}", connections.peak());
+
+        // Tell connected clients we are going away, so they can reconnect
+        // deliberately rather than discovering a dead socket on next write.
+        // Best-effort: a client that has already gone is not our problem.
+        int notified = 0;
+        for (Socket s : liveSockets.keySet()) {
+            try {
+                s.getOutputStream().write("BYE\n".getBytes(StandardCharsets.UTF_8));
+                s.getOutputStream().flush();
+                notified++;
+            } catch (Exception ignored) { }
+        }
+
+        log.info("Ingest stopped. Peak {}, notified {} clients, {} frames total",
+                connections.peak(), notified, connections.framesReceived());
     }
 }

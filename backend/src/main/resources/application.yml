@@ -21,7 +21,8 @@ management:
 
 logging:
   level:
-    com.GridWeaver: DEBUG
+    com.GridWeaver: INFO
+    com.GridWeaver.service.ZoneRebalancer: WARN
     org.apache.kafka.common.config.AbstractConfig: WARN
     org.apache.kafka.clients.Metadata: WARN
     org.apache.kafka.clients.NetworkClient: ERROR
@@ -70,7 +71,7 @@ gridweaver:
     soc-ceiling: 0.95
     soc-floor: 0.20
     stale-after-ms: 5000
-    min-transfer-kw: 50      # below this the transfer is not worth scheduling
+    min-transfer-kw: 200      # below this the transfer is not worth scheduling
     max-hops: 4
     transfer-change-threshold: 0.60          # log a change at 25%+ amount shift
     transfer-change-min-interval-ms: 60000
