@@ -92,8 +92,10 @@ export default function App() {
       if (dead) return;
       socket = new WebSocket(WS);
 
-      socket.onopen = () => setConn('live');
-
+      socket.onopen = () => {
+        setConn('live');
+        retryDelay = 1000;          // reset on success
+      };
       socket.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'snapshot') {
@@ -115,7 +117,8 @@ export default function App() {
 
       socket.onclose = () => {
         setConn('reconnecting');
-        retry = setTimeout(connect, 1500);
+        retry = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(retryDelay * 2, 15000);
       };
       socket.onerror = () => socket.close();
     };
