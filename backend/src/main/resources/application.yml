@@ -75,3 +75,11 @@ gridweaver:
     max-hops: 4
     transfer-change-threshold: 0.60          # log a change at 25%+ amount shift
     transfer-change-min-interval-ms: 60000
+
+  kafka-init:
+    image: apache/kafka:3.9.0
+    container_name: gw-kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: /opt/kafka/bin/kafka-topics.sh --bootstrap-server gw-kafka:19092 --create --if-not-exists --topic grid.telemetry --partitions 5 --replication-factor 1

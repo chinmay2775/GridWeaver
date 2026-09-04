@@ -1,0 +1,511 @@
+GridWeaver final review  09/04/2026 15:21:09
+
+=== threads ===
+{
+    "mode":  "virtual",
+    "platformThreadsLive":  46,
+    "platformThreadsPeak":  46,
+    "platformThreadsStarted":  49,
+    "activeConnections":  10000,
+    "heapUsedMb":  624,
+    "heapMaxMb":  2048
+}
+
+=== stats ===
+{
+    "nodesLoaded":  10000,
+    "byZone":  {
+                   "A":  2000,
+                   "B":  2000,
+                   "C":  2000,
+                   "D":  2000,
+                   "E":  2000
+               },
+    "activeConnections":  10000,
+    "peakConnections":  10000,
+    "totalAccepted":  10000,
+    "framesReceived":  5159782,
+    "framesRejected":  0,
+    "javaVersion":  "21.0.8+12-LTS-250",
+    "availableProcessors":  8,
+    "kafka":  {
+                  "topic":  "grid.telemetry",
+                  "rollupsPublished":  3010,
+                  "eventsPublished":  0,
+                  "failures":  10,
+                  "lastError":  "org.springframework.kafka.KafkaException: Send failed",
+                  "publishEveryNTicks":  4
+              }
+}
+
+=== zones ===
+{
+    "A":  {
+              "zone":  "A",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  9411.44,
+              "consumptionKw":  1126.39,
+              "netKw":  8285.05,
+              "avgBatterySoc":  0.55,
+              "loadFactor":  0.07
+          },
+    "B":  {
+              "zone":  "B",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  8112.39,
+              "consumptionKw":  2048.53,
+              "netKw":  6063.86,
+              "avgBatterySoc":  0.56,
+              "loadFactor":  0.13
+          },
+    "C":  {
+              "zone":  "C",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  6030.49,
+              "consumptionKw":  3474.05,
+              "netKw":  2556.44,
+              "avgBatterySoc":  0.54,
+              "loadFactor":  0.24
+          },
+    "D":  {
+              "zone":  "D",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  4328.28,
+              "consumptionKw":  4703.67,
+              "netKw":  -375.39,
+              "avgBatterySoc":  0.55,
+              "loadFactor":  0.34
+          },
+    "E":  {
+              "zone":  "E",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  2397.61,
+              "consumptionKw":  6061.37,
+              "netKw":  -3663.76,
+              "avgBatterySoc":  0.53,
+              "loadFactor":  0.48
+          }
+}
+
+=== states ===
+{
+    "byStatus":  {
+                     "IDLE":  45,
+                     "CHARGING":  5253,
+                     "DISCHARGING":  4702,
+                     "FAULT":  0
+                 },
+    "tick":  {
+                 "ticks":  2416,
+                 "lastTickMicros":  21656,
+                 "lastTickTransitions":  15,
+                 "cumulativeTransitionsInto":  {
+                                                   "IDLE":  21318,
+                                                   "CHARGING":  5253,
+                                                   "DISCHARGING":  25978,
+                                                   "FAULT":  10000
+                                               },
+                 "thresholds":  {
+                                    "dischargeAboveLoad":  0.8,
+                                    "chargeBelowLoad":  0.4,
+                                    "socFloor":  0.2,
+                                    "socCeiling":  0.95,
+                                    "idleBandKw":  0.1,
+                                    "staleAfterMs":  5000
+                                }
+             },
+    "zoneMachines":  {
+                         "A":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  603766,
+                                   "transitions":  1
+                               },
+                         "B":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  603766,
+                                   "transitions":  1
+                               },
+                         "C":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  603766,
+                                   "transitions":  1
+                               },
+                         "D":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  603766,
+                                   "transitions":  1
+                               },
+                         "E":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  603766,
+                                   "transitions":  1
+                               }
+                     },
+    "broadcast":  {
+                      "deltasSent":  0,
+                      "messagesSent":  0,
+                      "lastPayloadBytes":  0,
+                      "clients":  0
+                  }
+}
+
+=== balance ===
+{
+    "interconnectKw":  2500.0,
+    "zones":  {
+                  "A":  {
+                            "zone":  "A",
+                            "status":  "SURPLUS",
+                            "generationKw":  9409.35,
+                            "consumptionKw":  1122.03,
+                            "netKw":  8287.32,
+                            "storageHeadroomKw":  1455.77,
+                            "storageReserveKw":  1287.13,
+                            "exportableKw":  2500.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "B":  {
+                            "zone":  "B",
+                            "status":  "SURPLUS",
+                            "generationKw":  8105.34,
+                            "consumptionKw":  2049.9,
+                            "netKw":  6055.44,
+                            "storageHeadroomKw":  1589.38,
+                            "storageReserveKw":  1411.37,
+                            "exportableKw":  2500.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "C":  {
+                            "zone":  "C",
+                            "status":  "SURPLUS",
+                            "generationKw":  6022.86,
+                            "consumptionKw":  3474.81,
+                            "netKw":  2548.05,
+                            "storageHeadroomKw":  1689.48,
+                            "storageReserveKw":  1362.05,
+                            "exportableKw":  603.77,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "D":  {
+                            "zone":  "D",
+                            "status":  "SURPLUS",
+                            "generationKw":  4333.56,
+                            "consumptionKw":  4710.81,
+                            "netKw":  -377.25,
+                            "storageHeadroomKw":  1539.14,
+                            "storageReserveKw":  1272.99,
+                            "exportableKw":  0.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  false
+                        },
+                  "E":  {
+                            "zone":  "E",
+                            "status":  "SURPLUS",
+                            "generationKw":  2391.26,
+                            "consumptionKw":  6048.32,
+                            "netKw":  -3657.06,
+                            "storageHeadroomKw":  1556.52,
+                            "storageReserveKw":  1208.58,
+                            "exportableKw":  0.0,
+                            "deficitKw":  2448.48,
+                            "deficit":  true,
+                            "surplus":  false
+                        }
+              },
+    "totalExportableKw":  5603.77,
+    "totalDeficitKw":  2448.48,
+    "gridCanSelfBalance":  true
+}
+
+=== transfers ===
+{
+    "plan":  [
+                 {
+                     "from":  "C",
+                     "to":  "E",
+                     "amountKw":  603.77,
+                     "fromExportableKw":  603.77,
+                     "toDeficitKw":  2448.48,
+                     "ts":  1788515469905
+                 },
+                 {
+                     "from":  "B",
+                     "to":  "E",
+                     "amountKw":  1844.71,
+                     "fromExportableKw":  2500.0,
+                     "toDeficitKw":  2448.48,
+                     "ts":  1788515469905
+                 }
+             ],
+    "stats":  {
+                  "plansComputed":  2416,
+                  "transfersScheduled":  4553,
+                  "activeTransfers":  2,
+                  "unmetDeficitKw":  0.0,
+                  "minTransferKw":  200.0,
+                  "maxHops":  4
+              }
+}
+
+=== lag ===
+{
+    "group":  "gridweaver-history",
+    "totalLag":  0,
+    "maxPartitionLag":  0,
+    "lagByPartition":  {
+                           "0":  0,
+                           "1":  0,
+                           "2":  0,
+                           "3":  0,
+                           "4":  0
+                       },
+    "warnThreshold":  500,
+    "pollDurationMs":  8,
+    "bufferFullDrops":  0
+}
+
+=== events ===
+{
+    "total":  13,
+    "capacity":  4096,
+    "activeRoutes":  2,
+    "events":  [
+                   {
+                       "seq":  13,
+                       "ts":  1788515446641,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  989.1,
+                       "loadFactor":  2226.92,
+                       "avgSoc":  0.0,
+                       "dwellMs":  546005,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  12,
+                       "ts":  1788515362639,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  598.88,
+                       "loadFactor":  2257.07,
+                       "avgSoc":  0.0,
+                       "dwellMs":  462006,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  11,
+                       "ts":  1788515302635,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  235.02,
+                       "loadFactor":  2427.87,
+                       "avgSoc":  0.0,
+                       "dwellMs":  402001,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  10,
+                       "ts":  1788514964383,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  808.08,
+                       "loadFactor":  2228.95,
+                       "avgSoc":  0.0,
+                       "dwellMs":  63749,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  9,
+                       "ts":  1788514901978,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  1496.74,
+                       "loadFactor":  2294.59,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  8,
+                       "ts":  1788514901655,
+                       "kind":  "TRANSFER_ENDED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  0.0,
+                       "loadFactor":  1051.57,
+                       "avgSoc":  0.0,
+                       "dwellMs":  481,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  7,
+                       "ts":  1788514901220,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  240.24,
+                       "loadFactor":  1051.57,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  6,
+                       "ts":  1788514900636,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  501.67,
+                       "loadFactor":  501.67,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  5,
+                       "ts":  1788514866912,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "E",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  297
+                   },
+                   {
+                       "seq":  4,
+                       "ts":  1788514866800,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "D",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  3,
+                       "ts":  1788514866691,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "C",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  2,
+                       "ts":  1788514866574,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "B",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  1,
+                       "ts":  1788514866161,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "A",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   }
+               ]
+}
+
+=== health ===
+{
+    "components":  {
+                       "diskSpace":  {
+                                         "details":  {
+                                                         "total":  510006390784,
+                                                         "free":  282309603328,
+                                                         "threshold":  10485760,
+                                                         "path":  "C:\\Users\\Chinmay Chaudhari\\OneDrive\\Desktop\\Internship\\GridWeaver\\backend\\.",
+                                                         "exists":  true
+                                                     },
+                                         "status":  "UP"
+                                     },
+                       "grid":  {
+                                    "details":  {
+                                                    "activeConnections":  10000,
+                                                    "framesReceived":  5161341,
+                                                    "consumerLag":  0,
+                                                    "lagThreshold":  500
+                                                },
+                                    "status":  "UP"
+                                },
+                       "livenessState":  {
+                                             "status":  "UP"
+                                         },
+                       "ping":  {
+                                    "status":  "UP"
+                                },
+                       "readinessState":  {
+                                              "status":  "UP"
+                                          },
+                       "ssl":  {
+                                   "details":  {
+                                                   "expiringChains":  [
+
+                                                                      ],
+                                                   "invalidChains":  [
+
+                                                                     ],
+                                                   "validChains":  [
+
+                                                                   ]
+                                               },
+                                   "status":  "UP"
+                               }
+                   },
+    "groups":  [
+                   "liveness",
+                   "readiness"
+               ],
+    "status":  "UP"
+}
+
+=== thread dump ===
+virtual threads (ingest-conn) : 10000
+carrier threads (ForkJoinPool): 8
+scheduler threads (gw-sched)  : 4
+process RSS (MB)              : 2005.6

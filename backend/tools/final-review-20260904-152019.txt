@@ -1,0 +1,493 @@
+GridWeaver final review  09/04/2026 15:20:19
+
+=== threads ===
+{
+    "mode":  "virtual",
+    "platformThreadsLive":  46,
+    "platformThreadsPeak":  46,
+    "platformThreadsStarted":  49,
+    "activeConnections":  10000,
+    "heapUsedMb":  544,
+    "heapMaxMb":  2048
+}
+
+=== stats ===
+{
+    "nodesLoaded":  10000,
+    "byZone":  {
+                   "A":  2000,
+                   "B":  2000,
+                   "C":  2000,
+                   "D":  2000,
+                   "E":  2000
+               },
+    "activeConnections":  10000,
+    "peakConnections":  10000,
+    "totalAccepted":  10000,
+    "framesReceived":  4712519,
+    "framesRejected":  0,
+    "javaVersion":  "21.0.8+12-LTS-250",
+    "availableProcessors":  8,
+    "kafka":  {
+                  "topic":  "grid.telemetry",
+                  "rollupsPublished":  2765,
+                  "eventsPublished":  0,
+                  "failures":  10,
+                  "lastError":  "org.springframework.kafka.KafkaException: Send failed",
+                  "publishEveryNTicks":  4
+              }
+}
+
+=== zones ===
+{
+    "A":  {
+              "zone":  "A",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  9379.44,
+              "consumptionKw":  1129.5,
+              "netKw":  8249.94,
+              "avgBatterySoc":  0.55,
+              "loadFactor":  0.07
+          },
+    "B":  {
+              "zone":  "B",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  7649.2,
+              "consumptionKw":  2110.59,
+              "netKw":  5538.61,
+              "avgBatterySoc":  0.56,
+              "loadFactor":  0.14
+          },
+    "C":  {
+              "zone":  "C",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  6049.18,
+              "consumptionKw":  3431.7,
+              "netKw":  2617.48,
+              "avgBatterySoc":  0.54,
+              "loadFactor":  0.24
+          },
+    "D":  {
+              "zone":  "D",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  4333.7,
+              "consumptionKw":  4629.04,
+              "netKw":  -295.34,
+              "avgBatterySoc":  0.55,
+              "loadFactor":  0.34
+          },
+    "E":  {
+              "zone":  "E",
+              "nodeCount":  2000,
+              "reporting":  2000,
+              "generationKw":  2500.89,
+              "consumptionKw":  6091.51,
+              "netKw":  -3590.62,
+              "avgBatterySoc":  0.53,
+              "loadFactor":  0.48
+          }
+}
+
+=== states ===
+{
+    "byStatus":  {
+                     "IDLE":  31,
+                     "CHARGING":  5253,
+                     "DISCHARGING":  4716,
+                     "FAULT":  0
+                 },
+    "tick":  {
+                 "ticks":  2220,
+                 "lastTickMicros":  77708,
+                 "lastTickTransitions":  4,
+                 "cumulativeTransitionsInto":  {
+                                                   "IDLE":  19518,
+                                                   "CHARGING":  5253,
+                                                   "DISCHARGING":  24192,
+                                                   "FAULT":  10000
+                                               },
+                 "thresholds":  {
+                                    "dischargeAboveLoad":  0.8,
+                                    "chargeBelowLoad":  0.4,
+                                    "socFloor":  0.2,
+                                    "socCeiling":  0.95,
+                                    "idleBandKw":  0.1,
+                                    "staleAfterMs":  5000
+                                }
+             },
+    "zoneMachines":  {
+                         "A":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  554961,
+                                   "transitions":  1
+                               },
+                         "B":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  554961,
+                                   "transitions":  1
+                               },
+                         "C":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  554961,
+                                   "transitions":  1
+                               },
+                         "D":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  554961,
+                                   "transitions":  1
+                               },
+                         "E":  {
+                                   "state":  "SURPLUS",
+                                   "dwellMs":  554961,
+                                   "transitions":  1
+                               }
+                     },
+    "broadcast":  {
+                      "deltasSent":  0,
+                      "messagesSent":  0,
+                      "lastPayloadBytes":  0,
+                      "clients":  0
+                  }
+}
+
+=== balance ===
+{
+    "interconnectKw":  2500.0,
+    "zones":  {
+                  "A":  {
+                            "zone":  "A",
+                            "status":  "SURPLUS",
+                            "generationKw":  9407.38,
+                            "consumptionKw":  1118.4,
+                            "netKw":  8288.98,
+                            "storageHeadroomKw":  1455.03,
+                            "storageReserveKw":  1287.87,
+                            "exportableKw":  2500.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "B":  {
+                            "zone":  "B",
+                            "status":  "SURPLUS",
+                            "generationKw":  7633.87,
+                            "consumptionKw":  2102.4,
+                            "netKw":  5531.47,
+                            "storageHeadroomKw":  1589.86,
+                            "storageReserveKw":  1410.89,
+                            "exportableKw":  2500.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "C":  {
+                            "zone":  "C",
+                            "status":  "SURPLUS",
+                            "generationKw":  6054.52,
+                            "consumptionKw":  3457.22,
+                            "netKw":  2597.3,
+                            "storageHeadroomKw":  1689.5,
+                            "storageReserveKw":  1362.02,
+                            "exportableKw":  648.07,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  true
+                        },
+                  "D":  {
+                            "zone":  "D",
+                            "status":  "SURPLUS",
+                            "generationKw":  4307.6,
+                            "consumptionKw":  4669.2,
+                            "netKw":  -361.6,
+                            "storageHeadroomKw":  1539.84,
+                            "storageReserveKw":  1272.28,
+                            "exportableKw":  0.0,
+                            "deficitKw":  0.0,
+                            "deficit":  false,
+                            "surplus":  false
+                        },
+                  "E":  {
+                            "zone":  "E",
+                            "status":  "SURPLUS",
+                            "generationKw":  2479.89,
+                            "consumptionKw":  6034.03,
+                            "netKw":  -3554.14,
+                            "storageHeadroomKw":  1557.9,
+                            "storageReserveKw":  1207.2,
+                            "exportableKw":  0.0,
+                            "deficitKw":  2346.94,
+                            "deficit":  true,
+                            "surplus":  false
+                        }
+              },
+    "totalExportableKw":  5648.07,
+    "totalDeficitKw":  2346.94,
+    "gridCanSelfBalance":  true
+}
+
+=== transfers ===
+{
+    "plan":  [
+                 {
+                     "from":  "C",
+                     "to":  "E",
+                     "amountKw":  648.07,
+                     "fromExportableKw":  648.07,
+                     "toDeficitKw":  2346.94,
+                     "ts":  1788515421139
+                 },
+                 {
+                     "from":  "B",
+                     "to":  "E",
+                     "amountKw":  1698.87,
+                     "fromExportableKw":  2500.0,
+                     "toDeficitKw":  2346.94,
+                     "ts":  1788515421139
+                 }
+             ],
+    "stats":  {
+                  "plansComputed":  2221,
+                  "transfersScheduled":  4163,
+                  "activeTransfers":  2,
+                  "unmetDeficitKw":  0.0,
+                  "minTransferKw":  200.0,
+                  "maxHops":  4
+              }
+}
+
+=== lag ===
+{
+    "group":  "gridweaver-history",
+    "totalLag":  15,
+    "maxPartitionLag":  3,
+    "lagByPartition":  {
+                           "0":  3,
+                           "1":  3,
+                           "2":  3,
+                           "3":  3,
+                           "4":  3
+                       },
+    "warnThreshold":  500,
+    "pollDurationMs":  25,
+    "bufferFullDrops":  0
+}
+
+=== events ===
+{
+    "total":  12,
+    "capacity":  4096,
+    "activeRoutes":  2,
+    "events":  [
+                   {
+                       "seq":  12,
+                       "ts":  1788515362639,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  598.88,
+                       "loadFactor":  2257.07,
+                       "avgSoc":  0.0,
+                       "dwellMs":  462006,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  11,
+                       "ts":  1788515302635,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  235.02,
+                       "loadFactor":  2427.87,
+                       "avgSoc":  0.0,
+                       "dwellMs":  402001,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  10,
+                       "ts":  1788514964383,
+                       "kind":  "TRANSFER_CHANGED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  808.08,
+                       "loadFactor":  2228.95,
+                       "avgSoc":  0.0,
+                       "dwellMs":  63749,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  9,
+                       "ts":  1788514901978,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  1496.74,
+                       "loadFactor":  2294.59,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  8,
+                       "ts":  1788514901655,
+                       "kind":  "TRANSFER_ENDED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  0.0,
+                       "loadFactor":  1051.57,
+                       "avgSoc":  0.0,
+                       "dwellMs":  481,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  7,
+                       "ts":  1788514901220,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "B",
+                       "amountKw":  240.24,
+                       "loadFactor":  1051.57,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  6,
+                       "ts":  1788514900636,
+                       "kind":  "TRANSFER_STARTED",
+                       "zone":  "E",
+                       "counterparty":  "C",
+                       "amountKw":  501.67,
+                       "loadFactor":  501.67,
+                       "avgSoc":  0.0,
+                       "dwellMs":  0,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  5,
+                       "ts":  1788514866912,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "E",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  297
+                   },
+                   {
+                       "seq":  4,
+                       "ts":  1788514866800,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "D",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  3,
+                       "ts":  1788514866691,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "C",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  2,
+                       "ts":  1788514866574,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "B",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   },
+                   {
+                       "seq":  1,
+                       "ts":  1788514866161,
+                       "kind":  "ZONE_TRANSITION",
+                       "zone":  "A",
+                       "from":  "NOMINAL",
+                       "to":  "SURPLUS",
+                       "trigger":  "LOAD_FELL",
+                       "amountKw":  0.0,
+                       "loadFactor":  0.0,
+                       "avgSoc":  0.0,
+                       "dwellMs":  1991,
+                       "affectedNodes":  0
+                   }
+               ]
+}
+
+=== health ===
+{
+    "components":  {
+                       "diskSpace":  {
+                                         "details":  {
+                                                         "total":  510006390784,
+                                                         "free":  281948364800,
+                                                         "threshold":  10485760,
+                                                         "path":  "C:\\Users\\Chinmay Chaudhari\\OneDrive\\Desktop\\Internship\\GridWeaver\\backend\\.",
+                                                         "exists":  true
+                                                     },
+                                         "status":  "UP"
+                                     },
+                       "grid":  {
+                                    "details":  {
+                                                    "activeConnections":  10000,
+                                                    "framesReceived":  4719343,
+                                                    "consumerLag":  15,
+                                                    "lagThreshold":  500
+                                                },
+                                    "status":  "UP"
+                                },
+                       "livenessState":  {
+                                             "status":  "UP"
+                                         },
+                       "ping":  {
+                                    "status":  "UP"
+                                },
+                       "readinessState":  {
+                                              "status":  "UP"
+                                          },
+                       "ssl":  {
+                                   "details":  {
+                                                   "expiringChains":  [
+
+                                                                      ],
+                                                   "invalidChains":  [
+
+                                                                     ],
+                                                   "validChains":  [
+
+                                                                   ]
+                                               },
+                                   "status":  "UP"
+                               }
+                   },
+    "groups":  [
+                   "liveness",
+                   "readiness"
+               ],
+    "status":  "UP"
+}
